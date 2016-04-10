@@ -3,6 +3,7 @@
 #include "RF24.h"
 
 
+
 RF24 radio(7, 8);
 
 //Set the addresses for all stations
@@ -14,6 +15,14 @@ const int Station5 = 9005;
 const int Station6 = 9006;
 const int Station7 = 9007;
 const int Station8 = 9008;
+
+//Array that will hold the addresses that the hub will listen for (has a max of 6)
+int Listen[5];
+
+//Set Arduino pins
+const byte switchIn_1 = 2;
+const byte switchIn_2 = 3;
+const byte switchIn_3 = 4;
 const byte errorLED = 7;
 const byte PIR = 5;
 
@@ -36,33 +45,25 @@ void setup()
 
 	SetAddress();
 
-
-
 	//Make sure station address was set correctly
-	if (MyAddress == 9999) //If the variable for this station's address is still the default value, give an error
+	if (MyAddress == 9999 || MyAddress < 8999) //If the variable for this station's address is still the default value, give an error
 	{
-		Serial.println("ERROR 001!! Station address not set!");
-		Serial.print("Please restart!");
-
-		while (true) //Blink error LED
-		{
-			digitalWrite(errorLED, HIGH);
-			delay(500);
-			digitalWrite(errorLED, LOW);
-		}
+		Error(1);
 	}
-
 
 	else
 	{
-		Serial.println(MyAddress);
+		Serial.println("Address is: ");
+		Serial.println(MyAddress);  //Print the hub's address
 	}
 
+	SetReadRange();
+
+	radio.startListening();
 
 }
 
 void loop()
 {
-
 
 }
