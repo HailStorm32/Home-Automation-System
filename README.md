@@ -1,11 +1,13 @@
 INTRO
 ================
 This repository holds the code for a home automation system that I am creating from scratch using Arduino. This README will explain more details about this project, and how to get it running.
-><i>This project will take second priority over the <a href="https://github.com/HailStorm32/Quadcopter-Code">Autonomous Quad Project</a>, and so development will be slow.</i>
+><i>This project is being developed on my free time, so development will be slow.</i>
 
 <br>
 ####Project Goal:
-The system will consist of sensor hub (or stations) that will placed in each room of a house. Each hub will report wirelessly to the main hub which will compile all of the data and broadcast it on a secure server that the home owner can access to view room activity, temperature, etc. 
+My goal is to create a cheaper (and possibly better) alternative to home automation systems on the market.
+
+The system will consist of sensor hubs (or stations) that will be placed in each room of a house. Each hub will report wirelessly to the main hub which will compile all of the data and broadcast it on a secure server that the home owner can access to view and control temperature, room activity, etc. 
 
 <br>
 ####Components:
@@ -38,6 +40,11 @@ The server/main hub will likely consist of the following:
 Just put the folder(s) that are in the "Libraries" folder into Arduino's Libraries folder.
 
 <br>
+
+#####Wiring Schematic:
+The wiring schematic for this project can be found <a href="http://www.schematics.com/project/home-automation-system-35296/">here</a>.
+
+<br>
 #####Radio Setup:
 <ul>
     <li><a href="https://goo.gl/u8zBUV">NRF24L01 pinout</a></li>
@@ -54,7 +61,7 @@ Just put the folder(s) that are in the "Libraries" folder into Arduino's Librari
 |7 (MISO) |D12      |
 |8 (IRQ)  |n/a      |
 <br>
-#####Helpful References:
+######Helpful References:
 <ul>
     <li><a href="http://starter-kit.nettigo.eu/2014/connecting-and-programming-nrf24l01-with-arduino-and-other-boards/">NRF24L01 tutorial</a></li>
     <li><a href="http://tmrh20.github.io/RF24/classRF24.html">NRF24L01 Driver Class Documenation</a></li>
