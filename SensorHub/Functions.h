@@ -1,104 +1,101 @@
+//**************************************************************************************//
+//																						//
+//			This work by Demetrius Van Sickle is licensed under a						//
+//		Creative Commons Attribution-NonCommercial 4.0 International License.			//
+//																					    //
+//**************************************************************************************//
 
 
-
-
-void SetReadRange()
+//SetReadPipes
+/*void SetReadRange()
 {
 
 	if (MyAddress == Station1)
 	{
-		Listen[0] = MyAddress + 1;
-		Listen[1] = MyAddress + 2;
-		Listen[2] = MyAddress + 3;
-		Listen[3] = MyAddress + 4;
-		Listen[4] = MyAddress + 5;
-		Listen[5] = MyAddress + 6;
+		Listen0 = MyAddress + 1;
+		Listen1 = MyAddress + 2;
+		Listen2 = MyAddress + 3;
+		Listen3 = MyAddress + 4;
+		Listen4 = MyAddress + 5;
+		Listen5 = MyAddress + 6;
 	}
 
 	else if (MyAddress == Station2)
 	{
-		Listen[0] = MyAddress - 1;
-		Listen[1] = MyAddress + 1;
-		Listen[2] = MyAddress + 2;
-		Listen[3] = MyAddress + 3;
-		Listen[4] = MyAddress + 4;
-		Listen[5] = MyAddress + 5;
+		Listen0 = MyAddress - 1;
+		Listen1 = MyAddress + 1;
+		Listen2 = MyAddress + 2;
+		Listen3 = MyAddress + 3;
+		Listen4 = MyAddress + 4;
+		Listen5 = MyAddress + 5;
 	}
 
 	else if (MyAddress == Station3)
 	{
-		Listen[0] = MyAddress - 2;
-		Listen[1] = MyAddress - 1;
-		Listen[2] = MyAddress + 1;
-		Listen[3] = MyAddress + 2;
-		Listen[4] = MyAddress + 3;
-		Listen[5] = MyAddress + 4;
+		Listen0 = MyAddress - 2;
+		Listen1 = MyAddress - 1;
+		Listen2 = MyAddress + 1;
+		Listen3 = MyAddress + 2;
+		Listen4 = MyAddress + 3;
+		Listen5 = MyAddress + 4;
 	}
 
 	else if (MyAddress == Station4)
 	{
-		Listen[0] = MyAddress - 3;
-		Listen[1] = MyAddress - 2;
-		Listen[2] = MyAddress - 1;
-		Listen[3] = MyAddress + 1;
-		Listen[4] = MyAddress + 2;
-		Listen[5] = MyAddress + 3;
+		Listen0 = MyAddress - 3;
+		Listen1 = MyAddress - 2;
+		Listen2 = MyAddress - 1;
+		Listen3 = MyAddress + 1;
+		Listen4 = MyAddress + 2;
+		Listen5 = MyAddress + 3;
 	}
 
 	else if (MyAddress == Station5)
 	{
-		Listen[0] = MyAddress - 1;
-		Listen[1] = MyAddress - 2;
-		Listen[2] = MyAddress - 3;
-		Listen[3] = MyAddress + 1;
-		Listen[4] = MyAddress + 2;
-		Listen[5] = MyAddress + 3;
+		Listen0 = MyAddress - 1;
+		Listen1 = MyAddress - 2;
+		Listen2 = MyAddress - 3;
+		Listen3 = MyAddress + 1;
+		Listen4 = MyAddress + 2;
+		Listen5 = MyAddress + 3;
 	}
 
 	else if (MyAddress == Station6)
 	{
-		Listen[0] = MyAddress - 1;
-		Listen[1] = MyAddress - 2;
-		Listen[2] = MyAddress - 3;
-		Listen[3] = MyAddress - 4;
-		Listen[4] = MyAddress + 1;
-		Listen[5] = MyAddress + 2;
+		Listen0 = MyAddress - 1;
+		Listen1 = MyAddress - 2;
+		Listen2 = MyAddress - 3;
+		Listen3 = MyAddress - 4;
+		Listen4 = MyAddress + 1;
+		Listen5 = MyAddress + 2;
 	}
 
 	else if (MyAddress == Station7)
 	{
-		Listen[0] = MyAddress - 1;
-		Listen[1] = MyAddress - 2;
-		Listen[2] = MyAddress - 3;
-		Listen[3] = MyAddress - 4;
-		Listen[4] = MyAddress - 5;
-		Listen[5] = MyAddress + 1;
+		Listen0 = MyAddress - 1;
+		Listen1 = MyAddress - 2;
+		Listen2 = MyAddress - 3;
+		Listen3 = MyAddress - 4;
+		Listen4 = MyAddress - 5;
+		Listen5 = MyAddress + 1;
 	}
 
 	else if (MyAddress == Station8)
 	{
-		Listen[0] = MyAddress - 1;
-		Listen[1] = MyAddress - 2;
-		Listen[2] = MyAddress - 3;
-		Listen[3] = MyAddress - 4;
-		Listen[4] = MyAddress - 5;
-		Listen[5] = MyAddress - 6;
+		Listen0 = MyAddress - 1;
+		Listen1 = MyAddress - 2;
+		Listen2 = MyAddress - 3;
+		Listen3 = MyAddress - 4;
+		Listen4 = MyAddress - 5;
+		Listen5 = MyAddress - 6;
 	}
 
-	//Set the reading pipes
-	radio.openReadingPipe(0, Listen[0]);
-	radio.openReadingPipe(1, Listen[1]);
-	radio.openReadingPipe(2, Listen[2]);
-	radio.openReadingPipe(3, Listen[3]);
-	radio.openReadingPipe(4, Listen[4]);
-	radio.openReadingPipe(5, Listen[5]);
-
-}
+}*/
 
 
-void SetAddress()
+void SetAddress() //Decode signal from OR gate switch and assign address 
 {
-
+	
 	delay(2000);
 
 	bool A = digitalRead(switchIn_1);
@@ -147,7 +144,7 @@ void SetAddress()
 }
 
 
-void Error(int errorCode) //Function that will take an error number and display the proper error code and LED light
+void Error(int errorCode, int address = 0) //Function that will take an error number and display the proper error code and LED light
 {
 	if (errorCode == 1)
 	{
@@ -178,5 +175,183 @@ void Error(int errorCode) //Function that will take an error number and display 
 			delay(500);
 		}
 	}
+
+	else if (errorCode == 3)
+	{
+		Serial.println(" ");
+		Serial.print("ERROR 003!! Message not sent to ");
+		Serial.print(address);
+		Serial.println("!!");
+		Serial.println("Please restart!");
+
+		while (true) //Blink error LED
+		{
+			digitalWrite(errorLED, HIGH);
+			delay(700);
+			digitalWrite(errorLED, LOW);
+			delay(700);
+		}
+	}
 }
 
+
+/*void SendText(char message[] = {0}, int address = 0)
+{
+
+	int time = millis();
+	time + 10000;
+	while (radio.write(&message, sizeof(message)) != true)
+	{
+		if (millis() > time)
+		{
+			//Error(3, address);
+		}
+	}
+}*/
+
+
+/*void SendNum(float number, int address = 0)
+{
+	int time = millis();
+	time + 10000;
+	while (radio.write(&number, sizeof(number)) != true)
+	{
+		if (millis() > time)
+		{
+			Error(3, address);
+		}
+	}
+} */
+
+
+void FirstPing()
+{
+	char messageS[] = "ping";
+	char messageR[5] = {0};
+	int time = 0;
+	bool flag = false;
+
+	
+	switch (MyAddress)
+	{
+	case 9001:
+		Serial.println(" ");
+		Serial.println("case 9001 start");
+		//for (int i = 0; i != 1; i++)// 'i' needs to be set to 1 more than the max # of values// Default # is 6
+		//{
+			flag = false;
+
+			radio.openWritingPipe(MyAddress);
+			radio.stopListening();
+			
+			Serial.println(" ");
+			Serial.print("Sending to ");
+			Serial.print(Station2);
+			Serial.print(" ...");
+			
+			time = millis();
+			time = time + 1000;
+			while (radio.write(&messageS, sizeof(messageS)) != true)
+			{
+				if (millis() > time)
+				{
+					Error(3);
+				}
+			}
+
+			Serial.println(" ");
+			Serial.print("Message sent to ");
+			Serial.print(Station2);
+
+
+
+			radio.openReadingPipe(0, Station2); //Start listening for station2
+			radio.startListening();
+
+			Serial.println(" ");
+			Serial.print("Receiving from ");
+			Serial.print(Station2);
+			Serial.print(" ...");
+
+			while (flag == false)
+			{
+				if (radio.available())
+				{
+					radio.read(&messageR, sizeof(messageR));
+					Serial.println(" ");
+					Serial.print(messageR);
+					flag = true;
+				}
+			}
+
+			Serial.println(" ");
+			Serial.print("Message Received from ");
+			Serial.print(Station2);
+
+			/*Serial.println("");
+			Serial.print("Message is: ");
+			Serial.print(messageR); */
+		//} 
+
+		Serial.println(" ");
+		Serial.println("case 9001 END");
+		break;
+
+	case 9002:
+		Serial.println(" ");
+		Serial.println("case 9002 start");
+	//	for (int i = 0; i != 1; i++)// 'i' needs to be set to 1 more than the max # of values// Default # is 6
+		//{
+			flag = false;
+
+			radio.openReadingPipe(0, Station1);
+			radio.startListening();
+
+			Serial.println(" ");
+			Serial.print("Receiving from ");
+			Serial.print(Station1);
+			Serial.print(" ...");
+			
+			while (flag == false)
+			{
+				if (radio.available())
+				{
+					radio.read(&messageR, sizeof(messageR));
+					Serial.println(" ");
+					Serial.print(messageR);
+					flag = true;
+				}
+			}
+
+			if (flag == true)
+			{
+				radio.openWritingPipe(MyAddress);
+				radio.stopListening();
+				
+				Serial.println(" ");
+				Serial.print("Sending to ");
+				Serial.print(Station1);
+				Serial.print(" ...");
+				
+				time = millis();
+				time = time + 1000;
+				while (radio.write(&messageS, sizeof(messageS)) != true)
+				{
+					if (millis() > time)
+					{
+						Error(3);
+					}
+				}
+
+				Serial.println("");
+				Serial.print("Message sent to ");
+				Serial.print(Station1); 
+			}
+
+		//}
+
+		Serial.println("");
+		Serial.println("case 9002 END");
+		break;
+	}
+}

@@ -1,10 +1,17 @@
+//**************************************************************************************//
+//																						//
+//			This code by Demetrius Van Sickle is licensed under a						//
+//		Creative Commons Attribution-NonCommercial 4.0 International License.			//
+//																					    //
+//**************************************************************************************//
+
 #include <SPI.h>
 #include "nRF24L01.h"
-#include "RF24.h"
+#include <RF24.h>
 
 
 
-RF24 radio(7, 8);
+RF24 radio(9, 10);
 
 //Set the addresses for all stations
 const int Station1 = 9001;
@@ -16,8 +23,15 @@ const int Station6 = 9006;
 const int Station7 = 9007;
 const int Station8 = 9008;
 
-//Array that will hold the addresses that the hub will listen for (has a max of 6)
-int Listen[5];
+const int Station[8] = { 9001, 9002, 9003, 9004, 9005, 9006, 9007, 9008 };
+
+//variables that will hold the addresses that the hub will listen for (has a max of 6)
+/*int Listen0 = 0;
+int Listen1 = 0;
+int Listen2 = 0;
+int Listen3 = 0;
+int Listen4 = 0;
+int Listen5 = 0;*/
 
 //Set Arduino pins
 const byte switchIn_1 = 2;
@@ -37,6 +51,7 @@ void setup()
 
 	radio.begin();
 
+	//Setup pins
 	pinMode(switchIn_1, INPUT);
 	pinMode(switchIn_2, INPUT);
 	pinMode(switchIn_3, INPUT);
@@ -44,6 +59,8 @@ void setup()
 	pinMode(errorLED, OUTPUT);
 
 	SetAddress();
+	
+	//radio.setRetries(15, 15);
 
 	//Make sure station address was set correctly
 	if (MyAddress == 9999 || MyAddress < 8999) //If the variable for this station's address is still the default value, give an error
@@ -57,13 +74,13 @@ void setup()
 		Serial.println(MyAddress);  //Print the hub's address
 	}
 
-	SetReadRange();
-
-	radio.startListening();
+	//SetReadRange();
+	
+	FirstPing();
 
 }
 
 void loop()
 {
-
+	
 }
