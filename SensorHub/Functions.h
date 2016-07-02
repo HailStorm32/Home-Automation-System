@@ -1,96 +1,99 @@
 //**************************************************************************************//
 //																						//
-//			This work by Demetrius Van Sickle is licensed under a						//
+//			This code by Demetrius Van Sickle is licensed under a						//
 //		Creative Commons Attribution-NonCommercial 4.0 International License.			//
+//																						//
+//	The nRF24L01 libraries used in this code are copyrighted by their respective owners	//
+//			and are issued under the GNU General Public License version 2.				//
 //																					    //
 //**************************************************************************************//
 
 
 //SetReadPipes
-/*void SetReadRange()
+void SetReadRange()
 {
 
-	if (MyAddress == Station1)
+	if (MyAddress == Station[0])
 	{
-		Listen0 = MyAddress + 1;
-		Listen1 = MyAddress + 2;
-		Listen2 = MyAddress + 3;
-		Listen3 = MyAddress + 4;
-		Listen4 = MyAddress + 5;
-		Listen5 = MyAddress + 6;
+		Range[0] = MyAddress + 1;
+		Range[1] = MyAddress + 2;
+		Range[2] = MyAddress + 3;
+		Range[3] = MyAddress + 4;
+		Range[4] = MyAddress + 5;
+		//Range[5] = MyAddress + 6;
 	}
 
-	else if (MyAddress == Station2)
+	else if (MyAddress == Station[1])
 	{
-		Listen0 = MyAddress - 1;
-		Listen1 = MyAddress + 1;
-		Listen2 = MyAddress + 2;
-		Listen3 = MyAddress + 3;
-		Listen4 = MyAddress + 4;
-		Listen5 = MyAddress + 5;
+		Range[0] = MyAddress - 1;
+		Range[1] = MyAddress + 1;
+		Range[2] = MyAddress + 2;
+		Range[3] = MyAddress + 3;
+		Range[4] = MyAddress + 4;
+		//Range[5] = MyAddress + 5;
 	}
 
-	else if (MyAddress == Station3)
+	else if (MyAddress == Station[2])
 	{
-		Listen0 = MyAddress - 2;
-		Listen1 = MyAddress - 1;
-		Listen2 = MyAddress + 1;
-		Listen3 = MyAddress + 2;
-		Listen4 = MyAddress + 3;
-		Listen5 = MyAddress + 4;
+		Range[0] = MyAddress - 2;
+		Range[1] = MyAddress - 1;
+		Range[2] = MyAddress + 1;
+		Range[3] = MyAddress + 2;
+		Range[4] = MyAddress + 3;
+		//Range[5] = MyAddress + 4;
 	}
 
-	else if (MyAddress == Station4)
+	else if (MyAddress == Station[3])
 	{
-		Listen0 = MyAddress - 3;
-		Listen1 = MyAddress - 2;
-		Listen2 = MyAddress - 1;
-		Listen3 = MyAddress + 1;
-		Listen4 = MyAddress + 2;
-		Listen5 = MyAddress + 3;
+		Range[0] = MyAddress - 3;
+		Range[1] = MyAddress - 2;
+		Range[2] = MyAddress - 1;
+		Range[3] = MyAddress + 1;
+		Range[4] = MyAddress + 2;
+		//Range[5] = MyAddress + 3;
 	}
 
-	else if (MyAddress == Station5)
+	else if (MyAddress == Station[4])
 	{
-		Listen0 = MyAddress - 1;
-		Listen1 = MyAddress - 2;
-		Listen2 = MyAddress - 3;
-		Listen3 = MyAddress + 1;
-		Listen4 = MyAddress + 2;
-		Listen5 = MyAddress + 3;
+		Range[0] = MyAddress - 1;
+		Range[1] = MyAddress - 2;
+		Range[2] = MyAddress - 3;
+		Range[3] = MyAddress + 1;
+		Range[4] = MyAddress + 2;
+		//Range[5] = MyAddress + 3;
 	}
 
-	else if (MyAddress == Station6)
+	else if (MyAddress == Station[5])
 	{
-		Listen0 = MyAddress - 1;
-		Listen1 = MyAddress - 2;
-		Listen2 = MyAddress - 3;
-		Listen3 = MyAddress - 4;
-		Listen4 = MyAddress + 1;
-		Listen5 = MyAddress + 2;
+		Range[0] = MyAddress - 1;
+		Range[1] = MyAddress - 2;
+		Range[2] = MyAddress - 3;
+		Range[3] = MyAddress - 4;
+		Range[4] = MyAddress + 1;
+		//Range[5] = MyAddress + 2;
 	}
 
-	else if (MyAddress == Station7)
+	else if (MyAddress == Station[6])
 	{
-		Listen0 = MyAddress - 1;
-		Listen1 = MyAddress - 2;
-		Listen2 = MyAddress - 3;
-		Listen3 = MyAddress - 4;
-		Listen4 = MyAddress - 5;
-		Listen5 = MyAddress + 1;
+		Range[0] = MyAddress - 1;
+		Range[1] = MyAddress - 2;
+		Range[2] = MyAddress - 3;
+		Range[3] = MyAddress - 4;
+		Range[4] = MyAddress - 5;
+		//Range[5] = MyAddress + 1;
 	}
 
-	else if (MyAddress == Station8)
+	else if (MyAddress == Station[7])
 	{
-		Listen0 = MyAddress - 1;
-		Listen1 = MyAddress - 2;
-		Listen2 = MyAddress - 3;
-		Listen3 = MyAddress - 4;
-		Listen4 = MyAddress - 5;
-		Listen5 = MyAddress - 6;
+		Range[0] = MyAddress - 1;
+		Range[1] = MyAddress - 2;
+		Range[2] = MyAddress - 3;
+		Range[3] = MyAddress - 4;
+		Range[4] = MyAddress - 5;
+		//Range[5] = MyAddress - 6;
 	}
 
-}*/
+}
 
 
 void SetAddress() //Decode signal from OR gate switch and assign address 
@@ -104,42 +107,42 @@ void SetAddress() //Decode signal from OR gate switch and assign address
 
 	if (A == false && B == false && C == false)
 	{
-		MyAddress = Station1;
+		MyAddress = Station[0]; //9001
 	}
 
 	else if (A == true && B == false && C == false)
 	{
-		MyAddress = Station2;
+		MyAddress = Station[1]; //9002
 	}
 
 	else if (A == false && B == true && C == false)
 	{
-		MyAddress = Station3;
+		MyAddress = Station[2]; //9003
 	}
 
 	else if (A == true && B == true && C == false)
 	{
-		MyAddress = Station4;
+		MyAddress = Station[3]; //9004
 	}
 
 	else if (A == false && B == false && C == true)
 	{
-		MyAddress = Station5;
+		MyAddress = Station[4]; //9005
 	}
 
 	else if (A == true && B == false && C == true)
 	{
-		MyAddress = Station6;
+		MyAddress = Station[5]; //9006
 	}
 
 	else if (A == false && B == true && C == true)
 	{
-		MyAddress = Station7;
+		MyAddress = Station[6]; //9007
 	}
 
 	else if (A == true && B == true && C == true)
 	{
-		MyAddress = Station8;
+		MyAddress = Station[7]; //9008
 	}
 }
 
@@ -237,8 +240,8 @@ void FirstPing()
 	case 9001:
 		Serial.println(" ");
 		Serial.println("case 9001 start");
-		//for (int i = 0; i != 1; i++)// 'i' needs to be set to 1 more than the max # of values// Default # is 6
-		//{
+		for (int i = 0; i != 1; i++)// 'i' needs to be set to 1 more than the max # of values// Default # is 6
+		{
 			flag = false;
 
 			radio.openWritingPipe(MyAddress);
@@ -246,7 +249,7 @@ void FirstPing()
 			
 			Serial.println(" ");
 			Serial.print("Sending to ");
-			Serial.print(Station2);
+			Serial.print(Range[i]); //1
 			Serial.print(" ...");
 			
 			time = millis();
@@ -255,22 +258,22 @@ void FirstPing()
 			{
 				if (millis() > time)
 				{
-					Error(3);
+					Error(3, Range[i]);
 				}
 			}
 
 			Serial.println(" ");
 			Serial.print("Message sent to ");
-			Serial.print(Station2);
+			Serial.print(Range[i]); //1
 
 
 
-			radio.openReadingPipe(0, Station2); //Start listening for station2
+			radio.openReadingPipe(0, Station[1]); //Start listening for station2
 			radio.startListening();
 
 			Serial.println(" ");
 			Serial.print("Receiving from ");
-			Serial.print(Station2);
+			Serial.print(Range[i]); //1
 			Serial.print(" ...");
 
 			while (flag == false)
@@ -286,12 +289,12 @@ void FirstPing()
 
 			Serial.println(" ");
 			Serial.print("Message Received from ");
-			Serial.print(Station2);
+			Serial.print(Range[i]); //1
 
 			/*Serial.println("");
 			Serial.print("Message is: ");
 			Serial.print(messageR); */
-		//} 
+		} 
 
 		Serial.println(" ");
 		Serial.println("case 9001 END");
@@ -300,16 +303,15 @@ void FirstPing()
 	case 9002:
 		Serial.println(" ");
 		Serial.println("case 9002 start");
-	//	for (int i = 0; i != 1; i++)// 'i' needs to be set to 1 more than the max # of values// Default # is 6
-		//{
+
 			flag = false;
 
-			radio.openReadingPipe(0, Station1);
+			radio.openReadingPipe(0, Station[0]); //0
 			radio.startListening();
 
 			Serial.println(" ");
 			Serial.print("Receiving from ");
-			Serial.print(Station1);
+			Serial.print(Station[0]); //0
 			Serial.print(" ...");
 			
 			while (flag == false)
@@ -330,28 +332,298 @@ void FirstPing()
 				
 				Serial.println(" ");
 				Serial.print("Sending to ");
-				Serial.print(Station1);
+				Serial.print(Station[0]); //0
 				Serial.print(" ...");
 				
 				time = millis();
-				time = time + 1000;
+				time = time + 30000; //All the non-master hubs get a longer error time to help make sure the master hub gets the responce 
 				while (radio.write(&messageS, sizeof(messageS)) != true)
 				{
 					if (millis() > time)
 					{
-						Error(3);
+						Error(3, Range[i]);
 					}
 				}
 
 				Serial.println("");
 				Serial.print("Message sent to ");
-				Serial.print(Station1); 
+				Serial.print(Station[0]); //0
 			}
-
-		//}
 
 		Serial.println("");
 		Serial.println("case 9002 END");
 		break;
+
+	case 9003:
+		Serial.println(" ");
+		Serial.println("case 9003 start");
+
+		flag = false;
+
+		radio.openReadingPipe(0, Station[0]); //0
+		radio.startListening();
+
+		Serial.println(" ");
+		Serial.print("Receiving from ");
+		Serial.print(Range[i]); //0
+		Serial.print(" ...");
+
+		while (flag == false)
+		{
+			if (radio.available())
+			{
+				radio.read(&messageR, sizeof(messageR));
+				Serial.println(" ");
+				Serial.print(messageR);
+				flag = true;
+			}
+		}
+
+		if (flag == true)
+		{
+			radio.openWritingPipe(MyAddress);
+			radio.stopListening();
+
+			Serial.println(" ");
+			Serial.print("Sending to ");
+			Serial.print(Range[i]); //0
+			Serial.print(" ...");
+
+			time = millis();
+			time = time + 30000; //All the non-master hubs get a longer error time to help make sure the master hub gets the responce 
+			while (radio.write(&messageS, sizeof(messageS)) != true)
+			{
+				if (millis() > time)
+				{
+					Error(3, Range[i]);
+				}
+			}
+
+			Serial.println("");
+			Serial.print("Message sent to ");
+			Serial.print(Range[i]); //0
+		}
+
+		Serial.println("");
+		Serial.println("case 9003 END");
+		break;
+
+	case 9004:
+		Serial.println(" ");
+		Serial.println("case 9004 start");
+
+		flag = false;
+
+		radio.openReadingPipe(0, Station[0]); //0
+		radio.startListening();
+
+		Serial.println(" ");
+		Serial.print("Receiving from ");
+		Serial.print(Station[0]); //0
+		Serial.print(" ...");
+
+		while (flag == false)
+		{
+			if (radio.available())
+			{
+				radio.read(&messageR, sizeof(messageR));
+				Serial.println(" ");
+				Serial.print(messageR);
+				flag = true;
+			}
+		}
+
+		if (flag == true)
+		{
+			radio.openWritingPipe(MyAddress);
+			radio.stopListening();
+
+			Serial.println(" ");
+			Serial.print("Sending to ");
+			Serial.print(Station[0]); //0
+			Serial.print(" ...");
+
+			time = millis();
+			time = time + 30000; //All the non-master hubs get a longer error time to help make sure the master hub gets the responce 
+			while (radio.write(&messageS, sizeof(messageS)) != true)
+			{
+				if (millis() > time)
+				{
+					Error(3, Range[i]);
+				}
+			}
+
+			Serial.println("");
+			Serial.print("Message sent to ");
+			Serial.print(Station[0]); //0
+		}
+
+		Serial.println("");
+		Serial.println("case 9004 END");
+		break;
+
+	case 9005:
+		Serial.println(" ");
+		Serial.println("case 9005 start");
+
+		flag = false;
+
+		radio.openReadingPipe(0, Station[0]); //0
+		radio.startListening();
+
+		Serial.println(" ");
+		Serial.print("Receiving from ");
+		Serial.print(Station[0]); //0
+		Serial.print(" ...");
+
+		while (flag == false)
+		{
+			if (radio.available())
+			{
+				radio.read(&messageR, sizeof(messageR));
+				Serial.println(" ");
+				Serial.print(messageR);
+				flag = true;
+			}
+		}
+
+		if (flag == true)
+		{
+			radio.openWritingPipe(MyAddress);
+			radio.stopListening();
+
+			Serial.println(" ");
+			Serial.print("Sending to ");
+			Serial.print(Station[0]); //0
+			Serial.print(" ...");
+
+			time = millis();
+			time = time + 30000; //All the non-master hubs get a longer error time to help make sure the master hub gets the responce 
+			while (radio.write(&messageS, sizeof(messageS)) != true)
+			{
+				if (millis() > time)
+				{
+					Error(3, Range[i]);
+				}
+			}
+
+			Serial.println("");
+			Serial.print("Message sent to ");
+			Serial.print(Station[0]); //0
+		}
+
+		Serial.println("");
+		Serial.println("case 9005 END");
+		break;
+
+	case 9006:
+		Serial.println(" ");
+		Serial.println("case 9006 start");
+
+		flag = false;
+
+		radio.openReadingPipe(0, Station[0]); //0
+		radio.startListening();
+
+		Serial.println(" ");
+		Serial.print("Receiving from ");
+		Serial.print(Station[0]); //0
+		Serial.print(" ...");
+
+		while (flag == false)
+		{
+			if (radio.available())
+			{
+				radio.read(&messageR, sizeof(messageR));
+				Serial.println(" ");
+				Serial.print(messageR);
+				flag = true;
+			}
+		}
+
+		if (flag == true)
+		{
+			radio.openWritingPipe(MyAddress);
+			radio.stopListening();
+
+			Serial.println(" ");
+			Serial.print("Sending to ");
+			Serial.print(Station[0]); //0
+			Serial.print(" ...");
+
+			time = millis();
+			time = time + 30000; //All the non-master hubs get a longer error time to help make sure the master hub gets the responce 
+			while (radio.write(&messageS, sizeof(messageS)) != true)
+			{
+				if (millis() > time)
+				{
+					Error(3, Range[i]);
+				}
+			}
+
+			Serial.println("");
+			Serial.print("Message sent to ");
+			Serial.print(Station[0]); //0
+		}
+
+		Serial.println("");
+		Serial.println("case 9006 END");
+		break;
+
+	case 9007:
+		Serial.println(" ");
+		Serial.println("case 9007 start");
+
+		flag = false;
+
+		radio.openReadingPipe(0, Station[0]); //0
+		radio.startListening();
+
+		Serial.println(" ");
+		Serial.print("Receiving from ");
+		Serial.print(Station[0]); //0
+		Serial.print(" ...");
+
+		while (flag == false)
+		{
+			if (radio.available())
+			{
+				radio.read(&messageR, sizeof(messageR));
+				Serial.println(" ");
+				Serial.print(messageR);
+				flag = true;
+			}
+		}
+
+		if (flag == true)
+		{
+			radio.openWritingPipe(MyAddress);
+			radio.stopListening();
+
+			Serial.println(" ");
+			Serial.print("Sending to ");
+			Serial.print(Station[0]); //0
+			Serial.print(" ...");
+
+			time = millis();
+			time = time + 30000; //All the non-master hubs get a longer error time to help make sure the master hub gets the responce 
+			while (radio.write(&messageS, sizeof(messageS)) != true)
+			{
+				if (millis() > time)
+				{
+					Error(3, Range[i]);
+				}
+			}
+
+			Serial.println("");
+			Serial.print("Message sent to ");
+			Serial.print(Station[0]); //0
+		}
+
+		Serial.println("");
+		Serial.println("case 9007 END");
+		break;
+
+	//Need to add case 9008
 	}
 }
