@@ -19,8 +19,8 @@ RF24 radio(9, 10);
 //Set the addresses for all stations
 const int Station[8] = { 9001, 9002, 9003, 9004, 9005, 9006, 9007, 9008 };
 
-//variables that will hold the addresses that the hub will listen for (has a max of 6)
-int Range[5] = {};
+int Range[5] = {}; //variables that will hold the addresses that the hub will listen for (has a max of 6)
+
 
 //Set Arduino pins
 const byte switchIn_1 = 2;
@@ -31,6 +31,16 @@ const byte PIR = 5;
 
 
 int MyAddress = 9999; //Set up station's personal address. Set to 9999 to catch errors
+int MotionCount = 0; //Setup a variable that will hold the number of times the PIR sensor was activated
+unsigned long time = 0; //Setup variable that will cycle when to sensor readings at timed intervals
+int CycleTime = 6000; //Time between data transmissions (in milliseconds)  1000 = 1sec
+
+float message = 0; //Setup variable that will hold the incoming message data
+float temperature = 0; //Setup variable that will hold the incoming message data
+
+bool flag = true;
+
+
 
 #include "Functions.h"
 
@@ -81,4 +91,57 @@ void setup()
 void loop()
 {
 	
+	time = millis();
+	time = time + CycleTime;
+	
+	while (true)
+	{
+		
+		//Send the data to the master hub(or closest hub) at timed intervals defined by the CycleTime variable
+		//....Hope to add a clock in the future to help keep better timing
+		if (millis() > time)
+		{
+				flag = false; //Set the error flag to false
+
+				Serial.println("FAKE SEND"); //Here inplace of actualy sending the data
+
+				if (MyAddress == 9002)
+				{
+					SendNum(MotionCount, Range[0]);
+				}
+
+				time = millis();
+				time = time + CycleTime;
+		}
+	
+
+		//See if there is motion in the room 
+		if (digitalRead(PIR) == HIGH)
+		{
+			
+			if (flag == true)//Check to see if PIR sensor is conected
+			{ 
+				//Error(2); //For testing this is disabled
+			}
+			
+			delay(2500); //Because the sensor ouputs a long HIGH for a single trigger, the delay is to prevent spammed adding (hope to be fixed soon)
+			
+			Serial.println("MOTION");//For Debuging ONLY
+			
+			MotionCount = MotionCount + 1; //Add on to the # of motion captures 
+		}
+
+		//See if there are any incoming messages  
+		if (radio.available())
+		{
+			//Record message and print it
+			radio.read(&message, sizeof(message));
+			Serial.println(" ");
+			Serial.print(message);
+		}
+
+	}
+
+	Error(4);
+
 }

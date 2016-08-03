@@ -195,28 +195,50 @@ void Error(int errorCode, int address = 0) //Function that will take an error nu
 			delay(700);
 		}
 	}
+
+	else if (errorCode == 4)
+	{
+		Serial.println(" ");
+		Serial.print("ERROR 004!! Issue with code");
+		Serial.println("!!");
+		Serial.println("Please restart!");
+
+		while (true)
+		{
+			digitalWrite(errorLED, HIGH);
+
+		}
+	}
+
 }
 
 
 /*void SendText(char message[] = {0}, int address = 0)
 {
+	radio.openWritingPipe(MyAddress);
+	radio.stopListening();
 
-	int time = millis();
-	time + 10000;
+	unsigned long time = millis();
+	time = time + 5000;
+
 	while (radio.write(&message, sizeof(message)) != true)
-	{
+	{	
 		if (millis() > time)
 		{
-			//Error(3, address);
-		}
-	}
+			Error(3, address);
+		} 
+	}	
 }*/
 
 
-/*void SendNum(float number, int address = 0)
+void SendNum(float number, int address = 0)
 {
-	int time = millis();
-	time + 10000;
+	radio.openWritingPipe(MyAddress);
+	radio.stopListening();
+	
+	unsigned long time = millis();
+	time = time + 5000;
+
 	while (radio.write(&number, sizeof(number)) != true)
 	{
 		if (millis() > time)
@@ -224,7 +246,12 @@ void Error(int errorCode, int address = 0) //Function that will take an error nu
 			Error(3, address);
 		}
 	}
-} */
+	
+	Serial.println(" ");
+	Serial.print("Message sent to ");
+	Serial.print(address);
+
+} 
 
 
 void FirstPing()
@@ -251,7 +278,7 @@ void FirstPing()
 			Serial.print("Sending to ");
 			Serial.print(Range[i]); //1
 			Serial.print(" ...");
-			
+
 			time = millis();
 			time = time + 1000;
 			while (radio.write(&messageS, sizeof(messageS)) != true)
@@ -264,7 +291,7 @@ void FirstPing()
 
 			Serial.println(" ");
 			Serial.print("Message sent to ");
-			Serial.print(Range[i]); //1
+			Serial.print(Range[i]); //1 
 
 
 
@@ -341,7 +368,7 @@ void FirstPing()
 				{
 					if (millis() > time)
 					{
-						Error(3, Range[i]);
+						Error(3, Range[0]);
 					}
 				}
 
@@ -365,7 +392,7 @@ void FirstPing()
 
 		Serial.println(" ");
 		Serial.print("Receiving from ");
-		Serial.print(Range[i]); //0
+		Serial.print(Range[0]); //0
 		Serial.print(" ...");
 
 		while (flag == false)
@@ -386,7 +413,7 @@ void FirstPing()
 
 			Serial.println(" ");
 			Serial.print("Sending to ");
-			Serial.print(Range[i]); //0
+			Serial.print(Range[0]); //0
 			Serial.print(" ...");
 
 			time = millis();
@@ -395,13 +422,13 @@ void FirstPing()
 			{
 				if (millis() > time)
 				{
-					Error(3, Range[i]);
+					Error(3, Range[0]);
 				}
 			}
 
 			Serial.println("");
 			Serial.print("Message sent to ");
-			Serial.print(Range[i]); //0
+			Serial.print(Range[0]); //0
 		}
 
 		Serial.println("");
@@ -449,7 +476,7 @@ void FirstPing()
 			{
 				if (millis() > time)
 				{
-					Error(3, Range[i]);
+					Error(3, Range[0]);
 				}
 			}
 
@@ -503,7 +530,7 @@ void FirstPing()
 			{
 				if (millis() > time)
 				{
-					Error(3, Range[i]);
+					Error(3, Range[0]);
 				}
 			}
 
@@ -557,7 +584,7 @@ void FirstPing()
 			{
 				if (millis() > time)
 				{
-					Error(3, Range[i]);
+					Error(3, Range[0]);
 				}
 			}
 
@@ -611,7 +638,7 @@ void FirstPing()
 			{
 				if (millis() > time)
 				{
-					Error(3, Range[i]);
+					Error(3, Range[0]);
 				}
 			}
 
