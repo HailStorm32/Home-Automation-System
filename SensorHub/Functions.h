@@ -210,6 +210,23 @@ void Error(int errorCode, int address = 0) //Function that will take an error nu
 		}
 	}
 
+	else if (errorCode == 5)
+	{
+		Serial.println(" ");
+		Serial.print("ERROR 005!! Station ");
+		Serial.print(address);
+		Serial.println(" did not set message type!!");
+		Serial.println("Please restart!");
+
+		while (true)
+		{
+			digitalWrite(errorLED, HIGH);
+			delay(800);
+			digitalWrite(errorLED, LOW);
+			delay(800);
+		}
+	}
+
 }
 
 
@@ -231,75 +248,104 @@ void Error(int errorCode, int address = 0) //Function that will take an error nu
 }*/
 
 
-void SendNum(int AmountofData, int data1, int data2, int address)
+void SendNum(int AmountofData, String data1 = "       ", String data2 = "       ", String data3 = "       ", int TOaddress = 0)
 {
 	radio.openWritingPipe(MyAddress);
-	radio.stopListening();	
-	
-	int data[2] = {}; //Have to create 3 arrays otherwise it will cause a weird bug...
-	data[0] = data1;
-	data[1] = data2;
-	data[2] = 0;
+	radio.stopListening();
 
+	int data[3] = {}; //Have to create 4 arrays otherwise it will cause a weird bug...
 
-	/*Serial.println("");
-	Serial.println(AmountofData);
-	Serial.println("");
-	Serial.println(data1);     //Debug Only
-	Serial.println("");
-	Serial.println(data2);
-	Serial.println("");
-	Serial.println(address); */
+	String Type = "  ";
 
-	
 	int nul = 999;
+	int Number = 0;
+
+	Type[0] = data1[6];
+	Type[1] = data2[6];
+	Type[3] = data3[6];
+
+	data[0] = data1.toInt();
+	data[1] = data2.toInt();
+	data[2] = data3.toInt();
+
+
+	Serial.println("/////////////");
+	Serial.println(TOaddress);
+	Serial.println(data1);
+	Serial.println(Type[0]);
+	Serial.println(data[0]);
+
 
 	///////////Send the address it wants to send to/////
 	unsigned long time = millis();
 	time = time + 5000;
 
-	while (radio.write(&address, sizeof(address)) != true)
+	while (radio.write(&TOaddress, sizeof(TOaddress)) != true)
 	{
 		if (millis() > time)
 		{
-			Error(3, address);
+			Error(3, TOaddress);
 		}
 	}
 
-	/////////Start sending the data////////////
-	for(int i = 0; i != 2; i++)
+	///////////Send my address ////////////////////////////
+	time = millis();
+	time = time + 5000;
+
+	while (radio.write(&MyAddress, sizeof(MyAddress)) != true)
 	{
+		if (millis() > time)
+		{
+			Error(3, TOaddress);
+		}
+	}
+
+	///////////Tell the receiver how much data we are sending ////////////////////////////
+	time = millis();
+	time = time + 5000;
+
+	while (radio.write(&AmountofData, sizeof(AmountofData)) != true)
+	{
+		if (millis() > time)
+		{
+			Error(3, TOaddress);
+		}
+	}
+
+
+
+	/////////Start sending the data////////////
+	
+	for(int i = 0; i != AmountofData; i++)
+	{
+		//////////////Tell the receiver what type of message it is (Motion, Temperature or Random)////////////
 		time = millis();
 		time = time + 5000;
 
-		//Serial.println("fsfsdfsdfsdffsdfdsf");  //Debug Only
-		//Serial.println(data[i]);  //Debug Only
+		while (radio.write(&Type[i], sizeof(Type[i])) != true)
+		{
+			if (millis() > time)
+			{
+				Error(3, TOaddress);
+			}
+		}
+
+		///////////////////Send the number data////////////////////////////
+		time = millis();
+		time = time + 5000;
 
 		while (radio.write(&data[i], sizeof(data[i])) != true)
 		{
 			if (millis() > time)
 			{
-				Error(3, address);
+				Error(3, TOaddress);
 			}
-		}
-
-	}
-
-	//////Send a "nul" to tell other side we are done sending//////////
-	time = millis();
-	time = time + 5000;
-
-	while (radio.write(&nul, sizeof(nul)) != true)
-	{
-		if (millis() > time)
-		{
-			Error(3, address);
 		}
 	}
 	
 	Serial.println(" ");
 	Serial.print("Message(s) sent to ");
-	Serial.print(address);
+	Serial.print(TOaddress);
 
 } 
 
@@ -702,5 +748,251 @@ void FirstPing()
 		break;
 
 	//Need to add case 9008
+	}
+}
+
+
+int DigitCheck(int X)
+{
+	int Digits = 0;
+
+	Digits = X < 10 ? 1 :
+		X < 100 ? 2 :
+		X < 1000 ? 3 :
+		X < 10000 ? 4 :
+		X < 100000 ? 5 : -10;
+
+	if (Digits < 0)
+	{
+		Error(4);
+	}
+
+	else
+	{
+		return(Digits);
+	}
+}
+
+
+void M_Convert(int Num)
+{
+	
+	String Holder = "";
+	int Digits = 0;
+
+	//Make sure the incoming number isnt above the max value the String can handle
+	//Until I find out why, the max is 29999
+	if (Num > 29999)
+	{
+		Error(4);
+	}
+
+	Digits = DigitCheck(Num);
+
+	//Serial.println("DIGITS");
+	//Serial.println(Digits); //Debug Only
+
+	Holder = Num;
+
+	for (int i = 0; i != Digits; i++)
+	{
+		S_Motion[i] = Holder[i];
+	}
+
+	//S_Motion[0] = Holder[0];
+	//S_Motion[1] = Holder[1];
+	//S_Motion[2] = Holder[2];
+	////S_Motion[3] = Holder[3];
+	////S_Motion[4] = Holder[4];
+
+	//Serial.println("^^^^^^^^");
+	//Serial.println(S_Motion); //Debug Only
+
+}
+
+
+void T_Convert(int Num)
+{
+	String Holder = "  ";
+	int Digits = 0;
+
+	//Make sure the incoming number isnt above the max value the String can handle
+	//Until I find out why, the max is 29999
+	if (Num > 29999)
+	{
+		Error(4);
+	}
+
+	Digits = DigitCheck(Num);
+
+	Holder = Num;
+
+	for (int i = 0; i != Digits; i++)
+	{
+		S_Temperature[i] = Holder[i];
+	}
+
+	//S_Temperature[0] = Holder[0];
+	//S_Temperature[1] = Holder[1];
+	//S_Temperature[2] = Holder[2];
+	//S_Temperature[3] = Holder[3];
+	//S_Temperature[4] = Holder[4];
+
+	//Serial.println(S_Temperature); //Debug Only
+}
+
+
+void Temperature(int Num, int FROMaddress)
+{
+	switch (FROMaddress)
+	{
+		case 9001:
+			temperature_01 = Num;
+
+		case 9002:
+			temperature_02 = Num;
+
+		case 9003:
+			temperature_03 = Num;
+
+		case 9004:
+			temperature_04 = Num;
+
+		case 9005:
+			temperature_05 = Num;
+
+		case 9006:
+			temperature_06 = Num;
+
+		case 9007:
+			temperature_07 = Num;
+	}
+}
+
+
+void Motion(int Num, int FROMaddress)
+{
+	switch (FROMaddress)
+	{
+	case 9001:
+		MotionCount_01 = Num;
+
+	case 9002:
+		MotionCount_02 = Num;
+
+	case 9003:
+		MotionCount_03 = Num;
+
+	case 9004:
+		MotionCount_04 = Num;
+
+	case 9005:
+		MotionCount_05 = Num;
+
+	case 9006:
+		MotionCount_06 = Num;
+
+	case 9007:
+		MotionCount_07 = Num;
+	}
+}
+
+
+void CommandCheck(int command)
+{
+	//Blank for now
+
+	Serial.println(" ");  //temp.
+	Serial.print("Doing Command");  //temp.
+}
+
+
+void DataReceive()
+{
+	int TOaddress = 0;
+	int FROMaddress = 0;
+	int AmountofData = 0;
+	int message_int = 0; //Setup variable that will hold the incoming integer message data
+	char message_str; //Setup variable that will hold the incoming string message data
+
+	radio.read(&message_int, sizeof(message_int)); //Get who this is addressed to
+
+	TOaddress = message_int;
+
+	Serial.print("TOaddress: ");
+	Serial.println(message_int);
+
+	//Will only read the remaing message if its addressed to itsself
+	if (TOaddress == MyAddress)
+	{
+
+		////////////////Get sender's address////////////////////////////	
+		while (radio.available() != true) {} //Wait until a signal is available
+
+		radio.read(&message_int, sizeof(message_int));//Get sender's address
+
+		FROMaddress = message_int;
+
+		Serial.print("FROMaddress: ");
+		Serial.println(message_int);
+		///////////////////////////////////////////////////////////////
+
+
+		/////////////////Get AmountofData////////////////////////////	
+		while (radio.available() != true) {} //Wait until a signal is available
+
+		radio.read(&message_int, sizeof(message_int));//Get the number of how many messages will be sent
+
+		AmountofData = message_int;
+
+		Serial.print("AmountofData: ");
+		Serial.println(message_int);
+		///////////////////////////////////////////////////////////////
+
+
+		/////////////// RECEIVE THE DATA ////////////////////////////
+		for (int i = 0; i != AmountofData; i++)
+		{
+			while (radio.available() != true) {} //Wait until a signal is available
+
+			radio.read(&message_str, sizeof(message_str));//Get what type of message will be sent (Motion, Temperature or Random)
+
+			Serial.print("TYPE: ");
+			Serial.println(message_str);
+
+			if (message_str == 'M' || message_str == ' M' || message_str == 'M ' || message_str == ' M ')
+			{
+				while (radio.available() != true) {} //Wait until a signal is available
+				radio.read(&message_int, sizeof(message_int));//Get the the motion data
+
+				Motion(message_int, FROMaddress);
+			}
+
+			else if (message_str == 'T' || message_str == ' T' || message_str == 'T ' || message_str == ' T ')
+			{
+				while (radio.available() != true) {} //Wait until a signal is available
+				radio.read(&message_int, sizeof(message_int));//Get the temperature data
+
+				Temperature(message_int, FROMaddress);
+			}
+
+			else if (message_str == 'R' || message_str == ' R' || message_str == 'R ' || message_str == ' R ')
+			{
+				while (radio.available() != true) {} //Wait until a signal is available
+				radio.read(&message_int, sizeof(message_int));//Get command
+
+				CommandCheck(message_int);
+
+			}
+
+			else
+			{
+				Error(5, FROMaddress);
+			}
+		}
+
+		Serial.println(" ");  //Debug Only
+		Serial.print("END");  //Debug Only
+
 	}
 }

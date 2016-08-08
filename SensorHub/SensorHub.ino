@@ -28,17 +28,39 @@ const byte switchIn_2 = 3;
 const byte switchIn_3 = 4;
 const byte errorLED = 7;
 const byte PIR = 5;
-
+//////////////////"0123456"
+String S_Motion = "      M";
+///////////////////////"0123456"
+String S_Temperature = "      T";
 
 int MyAddress = 9999; //Set up station's personal address. Set to 9999 to catch errors
-int MotionCount = 0; //Setup a variable that will hold the number of times the PIR sensor was activated
+ //Setup a variable that will hold the number of times the PIR sensor was activated
 unsigned long time = 0; //Setup variable that will cycle when to sensor readings at timed intervals
 int CycleTime = 6000; //Time between data transmissions (in milliseconds)  1000 = 1sec
 
 bool flag = true;
 
-int message = 0; //Setup variable that will hold the incoming message data
-float temperature = 0; //Setup variable that will hold the incoming message data
+//Setup a variable that will hold the temperature
+//There are a total of 8 to hold data from each hub
+int temperature_01 = 0;
+int temperature_02 = 0;
+int temperature_03 = 0;
+int temperature_04 = 0;
+int temperature_05 = 0;
+int temperature_06 = 0;
+int temperature_07 = 0;
+int temperature_08 = 0;
+
+//Setup a variable that will hold the number of times the PIR sensor was activated
+//There are a total of 8 to hold data from each hub
+int MotionCount_01 = 0;
+int MotionCount_02 = 0;
+int MotionCount_03 = 0;
+int MotionCount_04 = 0;
+int MotionCount_05 = 0;
+int MotionCount_06 = 0;
+int MotionCount_07 = 0;
+int MotionCount_08 = 0;
 
 
 
@@ -91,7 +113,12 @@ void setup()
 
 void loop()
 {
-	
+	//Serial.println("ttttttttttttttttttttt");
+	//Serial.println(S_Motion);
+
+	T_Convert(66);
+	M_Convert(233);
+
 	time = millis();
 	time = time + CycleTime;
 	
@@ -107,7 +134,11 @@ void loop()
 
 				if (MyAddress != 9001)
 				{
-					SendNum(1, MotionCount, 5, Range[0]);
+					
+					//Serial.println("sdssdsdsdsdss");
+					//Serial.println(S_Motion);
+					
+					SendNum(1, S_Motion, "", "", Range[0]);
 				}
 
 				time = millis();
@@ -128,74 +159,19 @@ void loop()
 			
 			Serial.println("MOTION");//For Debuging ONLY
 			
-			MotionCount = MotionCount + 1; //Add on to the # of motion captures 
+			//MotionCount = MotionCount + 1; //Add on to the # of motion captures 
 		}
 
-		line135:
 
 		//See if there are any incoming messages  
 		if (radio.available())
 		{
-			//Record message and print it
-			radio.read(&message, sizeof(message));
 			
-			//Serial.println(" ");
-			//Serial.print(message);
+			DataReceive();
 
-			//Will only read the remaing message if its addressed to itsself
-			if (message == MyAddress)
-			{
-
-					while(radio.available() != true){} //Wait until a signal is available
-
-					radio.read(&message, sizeof(message));//Read data
-					
-					//Serial.println(" ");
-					//Serial.print(message);
-
-					//If this is the end of the message, end. 
-					if (message == 999)
-					{
-						Serial.println(" "); //Debug Only
-						Serial.print("ENDing"); //Debug Only
-						break;
-					}
-
-					//If not, write the data to the varable that holds Motion data
-					else
-					{
-						MotionCount = message;
-					}
-
-					while (radio.available() != true) {} //Wait until a signal is available
-					
-					radio.read(&message, sizeof(message)); //Read data
-
-					//Serial.println(" ");
-					//Serial.print(message);
-
-					//If this is the end of the message, end.
-					if (message == 999)
-					{
-						Serial.println(" "); //Debug Only
-						Serial.print("ENDing"); //Debug Only
-						break;
-					}
-					
-					//If not, write the data to the varable that holds Temperature data
-					else
-					{
-						temperature = message;
-					}		
-
-				Serial.println(" ");  //Debug Only
-				Serial.print("END");  //Debug Only
-
-				Serial.println(" ");
-				Serial.println(MotionCount);
-				Serial.println(temperature);
-
-			}
+			Serial.println(" ");
+			Serial.println(MotionCount_02);
+			Serial.println(temperature_02);
 
 		}
 
