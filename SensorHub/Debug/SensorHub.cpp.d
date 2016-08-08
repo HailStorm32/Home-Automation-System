@@ -1,0 +1,20 @@
+C:\Users\demet\AppData\Local\Temp\VMicroBuilds\SensorHub\nano_atmega328\SensorHub.cpp.o: \
+ C:\Users\demet\AppData\Local\Temp\VMicroBuilds\SensorHub\nano_atmega328\SensorHub.cpp \
+ C:\Users\demet\AppData\Local\arduino15\packages\arduino\hardware\avr\1.6.11\cores\arduino/arduino.h \
+ C:\Users\demet\AppData\Local\arduino15\packages\arduino\hardware\avr\1.6.11\cores\arduino/binary.h \
+ C:\Users\demet\AppData\Local\arduino15\packages\arduino\hardware\avr\1.6.11\cores\arduino/WCharacter.h \
+ C:\Users\demet\AppData\Local\arduino15\packages\arduino\hardware\avr\1.6.11\cores\arduino/WString.h \
+ C:\Users\demet\AppData\Local\arduino15\packages\arduino\hardware\avr\1.6.11\cores\arduino/HardwareSerial.h \
+ C:\Users\demet\AppData\Local\arduino15\packages\arduino\hardware\avr\1.6.11\cores\arduino/Stream.h \
+ C:\Users\demet\AppData\Local\arduino15\packages\arduino\hardware\avr\1.6.11\cores\arduino/Print.h \
+ C:\Users\demet\AppData\Local\arduino15\packages\arduino\hardware\avr\1.6.11\cores\arduino/Printable.h \
+ C:\Users\demet\AppData\Local\arduino15\packages\arduino\hardware\avr\1.6.11\cores\arduino/USBAPI.h \
+ C:\Users\demet\AppData\Local\arduino15\packages\arduino\hardware\avr\1.6.11\cores\arduino/Arduino.h \
+ C:\Users\demet\AppData\Local\arduino15\packages\arduino\hardware\avr\1.6.11\variants\eightanaloginputs/pins_arduino.h \
+ C:\Users\demet\AppData\Local\arduino15\packages\arduino\hardware\avr\1.6.11\variants\eightanaloginputs/../standard/pins_arduino.h \
+ C:\Users\demet\AppData\Local\arduino15\packages\arduino\hardware\avr\1.6.11\libraries\SPI\src/SPI.h \
+ C:\Users\demet\AppData\Local\arduino15\packages\arduino\hardware\avr\1.6.11\cores\arduino/Arduino.h \
+ C:\Users\demet\Documents\Arduino\libraries\RF24/nRF24L01.h \
+ C:\Users\demet\Documents\Arduino\libraries\RF24/RF24.h \
+ C:\Users\demet\Documents\Arduino\libraries\RF24/RF24_config.h \
+ C:\Users\demet\AppData\Local\Temp\VMicroBuilds\SensorHub\nano_atmega328\Functions.h

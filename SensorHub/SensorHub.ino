@@ -35,10 +35,11 @@ int MotionCount = 0; //Setup a variable that will hold the number of times the P
 unsigned long time = 0; //Setup variable that will cycle when to sensor readings at timed intervals
 int CycleTime = 6000; //Time between data transmissions (in milliseconds)  1000 = 1sec
 
-float message = 0; //Setup variable that will hold the incoming message data
+bool flag = true;
+
+int message = 0; //Setup variable that will hold the incoming message data
 float temperature = 0; //Setup variable that will hold the incoming message data
 
-bool flag = true;
 
 
 
@@ -101,13 +102,12 @@ void loop()
 		//....Hope to add a clock in the future to help keep better timing
 		if (millis() > time)
 		{
+				
 				flag = false; //Set the error flag to false
 
-				Serial.println("FAKE SEND"); //Here inplace of actualy sending the data
-
-				if (MyAddress == 9002)
+				if (MyAddress != 9001)
 				{
-					SendNum(MotionCount, Range[0]);
+					SendNum(1, MotionCount, 5, Range[0]);
 				}
 
 				time = millis();
@@ -121,7 +121,7 @@ void loop()
 			
 			if (flag == true)//Check to see if PIR sensor is conected
 			{ 
-				//Error(2); //For testing this is disabled
+				Error(2);
 			}
 			
 			delay(2500); //Because the sensor ouputs a long HIGH for a single trigger, the delay is to prevent spammed adding (hope to be fixed soon)
@@ -131,13 +131,72 @@ void loop()
 			MotionCount = MotionCount + 1; //Add on to the # of motion captures 
 		}
 
+		line135:
+
 		//See if there are any incoming messages  
 		if (radio.available())
 		{
 			//Record message and print it
 			radio.read(&message, sizeof(message));
-			Serial.println(" ");
-			Serial.print(message);
+			
+			//Serial.println(" ");
+			//Serial.print(message);
+
+			//Will only read the remaing message if its addressed to itsself
+			if (message == MyAddress)
+			{
+
+					while(radio.available() != true){} //Wait until a signal is available
+
+					radio.read(&message, sizeof(message));//Read data
+					
+					//Serial.println(" ");
+					//Serial.print(message);
+
+					//If this is the end of the message, end. 
+					if (message == 999)
+					{
+						Serial.println(" "); //Debug Only
+						Serial.print("ENDing"); //Debug Only
+						break;
+					}
+
+					//If not, write the data to the varable that holds Motion data
+					else
+					{
+						MotionCount = message;
+					}
+
+					while (radio.available() != true) {} //Wait until a signal is available
+					
+					radio.read(&message, sizeof(message)); //Read data
+
+					//Serial.println(" ");
+					//Serial.print(message);
+
+					//If this is the end of the message, end.
+					if (message == 999)
+					{
+						Serial.println(" "); //Debug Only
+						Serial.print("ENDing"); //Debug Only
+						break;
+					}
+					
+					//If not, write the data to the varable that holds Temperature data
+					else
+					{
+						temperature = message;
+					}		
+
+				Serial.println(" ");  //Debug Only
+				Serial.print("END");  //Debug Only
+
+				Serial.println(" ");
+				Serial.println(MotionCount);
+				Serial.println(temperature);
+
+			}
+
 		}
 
 	}

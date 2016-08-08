@@ -231,15 +231,65 @@ void Error(int errorCode, int address = 0) //Function that will take an error nu
 }*/
 
 
-void SendNum(float number, int address = 0)
+void SendNum(int AmountofData, int data1, int data2, int address)
 {
 	radio.openWritingPipe(MyAddress);
-	radio.stopListening();
+	radio.stopListening();	
 	
+	int data[2] = {}; //Have to create 3 arrays otherwise it will cause a weird bug...
+	data[0] = data1;
+	data[1] = data2;
+	data[2] = 0;
+
+
+	/*Serial.println("");
+	Serial.println(AmountofData);
+	Serial.println("");
+	Serial.println(data1);     //Debug Only
+	Serial.println("");
+	Serial.println(data2);
+	Serial.println("");
+	Serial.println(address); */
+
+	
+	int nul = 999;
+
+	///////////Send the address it wants to send to/////
 	unsigned long time = millis();
 	time = time + 5000;
 
-	while (radio.write(&number, sizeof(number)) != true)
+	while (radio.write(&address, sizeof(address)) != true)
+	{
+		if (millis() > time)
+		{
+			Error(3, address);
+		}
+	}
+
+	/////////Start sending the data////////////
+	for(int i = 0; i != 2; i++)
+	{
+		time = millis();
+		time = time + 5000;
+
+		//Serial.println("fsfsdfsdfsdffsdfdsf");  //Debug Only
+		//Serial.println(data[i]);  //Debug Only
+
+		while (radio.write(&data[i], sizeof(data[i])) != true)
+		{
+			if (millis() > time)
+			{
+				Error(3, address);
+			}
+		}
+
+	}
+
+	//////Send a "nul" to tell other side we are done sending//////////
+	time = millis();
+	time = time + 5000;
+
+	while (radio.write(&nul, sizeof(nul)) != true)
 	{
 		if (millis() > time)
 		{
@@ -248,7 +298,7 @@ void SendNum(float number, int address = 0)
 	}
 	
 	Serial.println(" ");
-	Serial.print("Message sent to ");
+	Serial.print("Message(s) sent to ");
 	Serial.print(address);
 
 } 
