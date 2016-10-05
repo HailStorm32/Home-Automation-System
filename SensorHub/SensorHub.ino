@@ -28,7 +28,7 @@ int *Range = new int[5];
 
 //Variables to hold this stations senser data
 int MotionCount = 0;
-int TemperatureCount = 0;
+float TemperatureCount = 0;
 
 //Set Arduino pins
 const byte switchIn_1 = 2;
@@ -40,7 +40,7 @@ const byte PIR = 5;
 int MyAddress = 9999; //Set up station's personal address. Set to 9999 to catch errors
 
 //Setup variables that will hold time data
-unsigned long time1 = 0; 
+unsigned long time1 = 0;
 unsigned long time2 = 0;
 
 const int SendTime = 10000; //Time it takes a hub to completly send a message
@@ -124,7 +124,7 @@ void setup()
 	SetReadRange(); //Set which stations this current station can receive from based on its address
 
 	delay(1000); //Delay to allow for buffer time
-	
+
 	FirstPing();//Have the master station ping all other stations 
 
 	//Set the reading pipes
@@ -147,76 +147,76 @@ void loop()
 	//bool flag2 = false;
 	time1 = millis();
 	time2 = time1;
-	
+
 	while (true)
 	{
-		
+
 		//Send the data to the master hub(or closest hub) at timed intervals defined by the CycleTime variable
 		//....Hope to add a clock in the future to help keep better timing
 		if (millis() > time1 + CycleTime)
 		{
-				
-				flag = false; //Set the error flag to false
 
-				//delay(200 + (1000 * (MyAddress - 9000)));
+			flag = false; //Set the error flag to false
 
-				if (MyAddress != 9001)
-				{
+			//delay(200 + (1000 * (MyAddress - 9000)));
 
-					TemperatureCount = TemperatureCount / counter; //average the readings from the DHT
-					
-					SendData(9001, MotionCount, TemperatureCount, "", 3); //send the data
+			if (MyAddress != 9001)
+			{
 
-					//Reset variables
-					TemperatureCount = 0;
-					MotionCount = 0;
-					counter = 0;
+				TemperatureCount = TemperatureCount / counter; //average the readings from the DHT
 
-				}
+				SendData(9001, MotionCount, TemperatureCount, "", 3); //send the data
 
-				else if (MyAddress == 9001)
-				{
-					TemperatureCount = TemperatureCount / counter; //average the readings from the DHT
+				//Reset variables
+				TemperatureCount = 0;
+				MotionCount = 0;
+				counter = 0;
 
-					temperature_01 = TemperatureCount;
-					MotionCount_01 = MotionCount;
+			}
 
-					TemperatureCount = 0;
-					MotionCount = 0;
+			else if (MyAddress == 9001)
+			{
+				TemperatureCount = TemperatureCount / counter; //average the readings from the DHT
 
-				}
-					
+				temperature_01 = TemperatureCount;
+				MotionCount_01 = MotionCount;
 
-				//Reset the timer
-				time1 = millis();
+				TemperatureCount = 0;
+				MotionCount = 0;
+
+			}
+
+
+			//Reset the timer
+			time1 = millis();
 		}
-	
+
 
 		//See if there is motion in the room and record it
 		if (digitalRead(PIR) == HIGH)
 		{
-			
+
 			if (flag == true)//Check to see if PIR sensor is conected
-			{ 
+			{
 				//Error(2);  //UNCOMMENT AFTER DEBUG!!!
 			}
-			
+
 			delay(2500); //Because the sensor ouputs a long HIGH for a single trigger, the delay is to prevent spammed adding (hope to be fixed soon)
-			
+
 			Serial.println("MOTION");//For Debuging ONLY
-			
+
 			MotionCount = MotionCount + 1; //Add on to the # of motion captures 
 		}
 
-		
+
 		//Read data from the DHT sensor at timed intervals defiend by the ReadCycle variable
 		if (millis() > time2 + ReadCyle)
 		{
 			holder = dht.readTemperature(true);
-			
+
 			TemperatureCount = TemperatureCount + holder;
 
-			if (isnan(holder)) 
+			if (isnan(holder))
 			{
 				Error(6);
 			}
@@ -227,15 +227,15 @@ void loop()
 		}
 
 		//See if there are any incoming messages  
-		
+
 		if (radio.available())
 		{
-			
+
 			DataReceive();
 
 			if (MyAddress == 9001)
 			{
-				
+
 				Serial.println("  ");
 				Serial.print("9001 -- Motion: ");
 				Serial.println(MotionCount_01);
@@ -254,20 +254,20 @@ void loop()
 				Serial.print("9003 -- Temperature: ");
 				Serial.println(temperature_03);
 
-			/*	Serial.print("9004 -- Motion: ");
-				Serial.println(MotionCount_04);
-				Serial.print("9004 -- Temperature: ");
-				Serial.println(temperature_04);
+				/*	Serial.print("9004 -- Motion: ");
+					Serial.println(MotionCount_04);
+					Serial.print("9004 -- Temperature: ");
+					Serial.println(temperature_04);
 
-				Serial.print("9005 -- Motion: ");
-				Serial.println(MotionCount_05);
-				Serial.print("9005 -- Temperature: ");
-				Serial.println(temperature_05);
+					Serial.print("9005 -- Motion: ");
+					Serial.println(MotionCount_05);
+					Serial.print("9005 -- Temperature: ");
+					Serial.println(temperature_05);
 
-				Serial.print("9006 -- Motion: ");
-				Serial.println(MotionCount_06);
-				Serial.print("9006 -- Temperature: ");
-				Serial.println(temperature_06); */
+					Serial.print("9006 -- Motion: ");
+					Serial.println(MotionCount_06);
+					Serial.print("9006 -- Temperature: ");
+					Serial.println(temperature_06); */
 			}
 		}
 
