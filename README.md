@@ -14,14 +14,16 @@ The system will consist of sensor hubs (or stations) that will be placed in each
 <br>
 #####Sensor Hub:
 Each sensor hub will consist of the following:
-><i>The hub is still in development, so some of these items are just ideas and may change.</i>
-
+><i>The hub is still in development, so some of these items may change.</i>
 
 <ul>
-    <li>Arduino Nano</li>
-    <li><a href="http://www.ebay.com/itm/10-Pcs-NRF24L01-2-4GHz-RF-Antenna-Wireless-Transceiver-Module-For-Arduino-/221808097338?hash=item33a4caf83a:g:83gAAMXQgwNSKaUc">NRF24L01 + 2.4GHz RF Antenna Wireless Transceiver Module</a></li>
-    <li>Temperature Sensor</li>
-    <li>Motion Sensor (i.e. Sonar)</li>
+    <li>1x <a href="http://www.ebay.com/itm/221808097338?_trksid=p2057872.m2749.l2649&ssPageName=STRK%3AMEBIDX%3AIT">NRF24L01 Radio Transceiver</a></li>
+    <li>1x <a href="http://www.ebay.com/itm/181943830888?_trksid=p2057872.m2749.l2649&ssPageName=STRK%3AMEBIDX%3AIT">Ardunio Nano</a></li>
+    <li>1x <a href="http://www.ebay.com/itm/271360547550?_trksid=p2057872.m2749.l2649&ssPageName=STRK%3AMEBIDX%3AIT">DHT11 Temperature and Humidity Sensor</a></li>
+    <li>3x <a href="http://www.mouser.com/ds/2/405/cd4072b-407430.pdf">CD4072B Dual 4-Input OR Gates</a></li>
+    <li>7x 1k Resistors</li>
+    <li>1x <a href="http://www.ebay.com/itm/301122784490?_trksid=p2057872.m2749.l2649&ssPageName=STRK%3AMEBIDX%3AIT">8 position DIP Switch</a></li>
+    <li>1x 3mm OR 5mm Red LED</li>
 </ul>
 <br>
 #####Server:
@@ -31,13 +33,23 @@ The server/main hub will likely consist of the following:
 
 
 <ul>
-    <li><a href="http://www.newegg.com/Product/Product.aspx?Item=N82E16813455003">Humming Board i2eX</a> running Ubuntu</li>
+    <li><a href="http://www.newegg.com/Product/Product.aspx?Item=N82E16813455003">Humming Board i2eX</a>(or similar) running Ubuntu</li>
     <li>More to come...</li>
 </ul>
 
 <br>
 ####Setting Up:
-Just put the folder(s) that are in the "Libraries" folder into Arduino's Libraries folder.
+
+#####The IDE:
+To program the sensor hubs I am using Microsoft Visual Studio Community 2015 with an extension called Visual Micro that enables the ability to deploy to Arduino boards.
+><i>Even though this code can be written in the Arduino IDE, the large size of the code and numerous tools that Visual Studio offers makes it a lot easier to use VS.</i>
+
+<ol>
+    <li><a href="https://go.microsoft.com/fwlink/?LinkId=691978&clcid=0x409">Download VS Community 2015</a></li>
+    <li>Download/Install <a href="http://www.visualmicro.com/page/Arduino-Visual-Studio-Downloads.aspx">Visual Micro extension</a></li>
+    <li>Dowload and install the Arduino IDE <i>(Visual Micro uses some of its libraries)</i></li>
+    <li>Put the folder(s) that are in the "Libraries" folder into Arduino's Libraries folder.
+</ol>
 
 <br>
 
