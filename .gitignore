@@ -17,6 +17,25 @@ $RECYCLE.BIN/
 # Windows shortcuts
 *.lnk
 
+# VS Files
+*.suo
+*.ilk
+*.pdb
+*.obj
+*.build*
+*.log
+*.command.*
+*.read.*
+*.write.*
+*.last*
+*.link*
+*.idb
+*.elf
+*.hex
+*.a
+*.xml
+*.vsarduino*
+
 # =========================
 # Operating System Files
 # =========================
