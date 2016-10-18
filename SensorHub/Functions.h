@@ -13,7 +13,7 @@
 void SetReadRange()
 {
 
-	if (MyAddress == Station[0])
+	if (MyAddress == STATION[0])
 	{
 		Range[0] = MyAddress + 1;
 		Range[1] = MyAddress + 2;
@@ -23,7 +23,7 @@ void SetReadRange()
 		//Range[5] = MyAddress + 6;
 	}
 
-	else if (MyAddress == Station[1])
+	else if (MyAddress == STATION[1])
 	{
 		Range[0] = MyAddress - 1;
 		Range[1] = MyAddress + 1;
@@ -33,7 +33,7 @@ void SetReadRange()
 		//Range[5] = MyAddress + 5;
 	}
 
-	else if (MyAddress == Station[2])
+	else if (MyAddress == STATION[2])
 	{
 		Range[0] = MyAddress - 2;
 		Range[1] = MyAddress - 1;
@@ -43,7 +43,7 @@ void SetReadRange()
 		//Range[5] = MyAddress + 4;
 	}
 
-	else if (MyAddress == Station[3])
+	else if (MyAddress == STATION[3])
 	{
 		Range[0] = MyAddress - 3;
 		Range[1] = MyAddress - 2;
@@ -53,7 +53,7 @@ void SetReadRange()
 		//Range[5] = MyAddress + 3;
 	}
 
-	else if (MyAddress == Station[4])
+	else if (MyAddress == STATION[4])
 	{
 		Range[0] = MyAddress - 1;
 		Range[1] = MyAddress - 2;
@@ -63,7 +63,7 @@ void SetReadRange()
 		//Range[5] = MyAddress + 3;
 	}
 
-	else if (MyAddress == Station[5])
+	else if (MyAddress == STATION[5])
 	{
 		Range[0] = MyAddress - 1;
 		Range[1] = MyAddress - 2;
@@ -73,7 +73,7 @@ void SetReadRange()
 		//Range[5] = MyAddress + 2;
 	}
 
-	else if (MyAddress == Station[6])
+	else if (MyAddress == STATION[6])
 	{
 		Range[0] = MyAddress - 1;
 		Range[1] = MyAddress - 2;
@@ -83,7 +83,7 @@ void SetReadRange()
 		//Range[5] = MyAddress + 1;
 	}
 
-	else if (MyAddress == Station[7])
+	else if (MyAddress == STATION[7])
 	{
 		Range[0] = MyAddress - 1;
 		Range[1] = MyAddress - 2;
@@ -98,80 +98,80 @@ void SetReadRange()
 
 void SetAddress() //Decode signal from OR gate switch and assign address 
 {
-	
+
 	delay(2000);
 
-	bool A = digitalRead(switchIn_1);
-	bool B = digitalRead(switchIn_2);
-	bool C = digitalRead(switchIn_3);
+	bool A = digitalRead(SWITCH_IN_1);
+	bool B = digitalRead(SWITCH_IN_2);
+	bool C = digitalRead(SWITCH_IN_3);
 
 	if (A == false && B == false && C == false)
 	{
-		MyAddress = Station[0]; //9001
+		MyAddress = STATION[0]; //9001
 
 		//Set time before each delay
-		CycleTime = (SendTime + (BaseCycleTime * (MyAddress - 9000)));
+		CycleTime = (SEND_TIME + (BASE_CYCLE_TIME * (MyAddress - 9000)));
 	}
 
 	else if (A == true && B == false && C == false)
 	{
-		MyAddress = Station[1]; //9002
-		
+		MyAddress = STATION[1]; //9002
+
 		//Set time before each delay
-		CycleTime = (SendTime + (BaseCycleTime * (MyAddress - 9000)));
+		CycleTime = (SEND_TIME + (BASE_CYCLE_TIME * (MyAddress - 9000)));
 	}
 
 	else if (A == false && B == true && C == false)
 	{
-		MyAddress = Station[2]; //9003
-		
+		MyAddress = STATION[2]; //9003
+
 		//Set time before each delay
-		CycleTime = (SendTime + (BaseCycleTime * (MyAddress - 9000)));
+		CycleTime = (SEND_TIME + (BASE_CYCLE_TIME * (MyAddress - 9000)));
 	}
 
 	else if (A == true && B == true && C == false)
 	{
-		MyAddress = Station[3]; //9004
-		
+		MyAddress = STATION[3]; //9004
+
 		//Set time before each delay
-		CycleTime = (SendTime + (BaseCycleTime * (MyAddress - 9000)));
+		CycleTime = (SEND_TIME + (BASE_CYCLE_TIME * (MyAddress - 9000)));
 	}
 
 	else if (A == false && B == false && C == true)
 	{
-		MyAddress = Station[4]; //9005
-		
+		MyAddress = STATION[4]; //9005
+
 		//Set time before each delay
-		CycleTime = (SendTime + (BaseCycleTime * (MyAddress - 9000)));
+		CycleTime = (SEND_TIME + (BASE_CYCLE_TIME * (MyAddress - 9000)));
 	}
 
 	else if (A == true && B == false && C == true)
 	{
-		MyAddress = Station[5]; //9006
-		
+		MyAddress = STATION[5]; //9006
+
 		//Set time before each delay
-		CycleTime = (SendTime + (BaseCycleTime * (MyAddress - 9000)));
+		CycleTime = (SEND_TIME + (BASE_CYCLE_TIME * (MyAddress - 9000)));
 	}
 
 	else if (A == false && B == true && C == true)
 	{
-		MyAddress = Station[6]; //9007
-		
+		MyAddress = STATION[6]; //9007
+
 		//Set time before each delay
-		CycleTime = (SendTime + (BaseCycleTime * (MyAddress - 9000)));
+		CycleTime = (SEND_TIME + (BASE_CYCLE_TIME * (MyAddress - 9000)));
 	}
 
 	else if (A == true && B == true && C == true)
 	{
-		MyAddress = Station[7]; //9008
-		
+		MyAddress = STATION[7]; //9008
+
 		//Set time before each delay
-		CycleTime = (SendTime + (BaseCycleTime * (MyAddress - 9000)));
+		CycleTime = (SEND_TIME + (BASE_CYCLE_TIME * (MyAddress - 9000)));
 	}
 }
 
 
-void Error(int errorCode, int address = 0) //Function that will take an error number and display the proper error code and LED light
+void Error(int errorCode, int Address = 0) //Function that will take an error number and display the proper error code and LED light
 {
 	if (errorCode == 1)
 	{
@@ -181,9 +181,9 @@ void Error(int errorCode, int address = 0) //Function that will take an error nu
 
 		while (true) //Blink error LED
 		{
-			digitalWrite(errorLED, HIGH);
+			digitalWrite(ERROR_LED, HIGH);
 			delay(300);
-			digitalWrite(errorLED, LOW);
+			digitalWrite(ERROR_LED, LOW);
 			delay(300);
 		}
 	}
@@ -196,9 +196,9 @@ void Error(int errorCode, int address = 0) //Function that will take an error nu
 
 		while (true) //Blink error LED
 		{
-			digitalWrite(errorLED, HIGH);
+			digitalWrite(ERROR_LED, HIGH);
 			delay(500);
-			digitalWrite(errorLED, LOW);
+			digitalWrite(ERROR_LED, LOW);
 			delay(500);
 		}
 	}
@@ -207,17 +207,17 @@ void Error(int errorCode, int address = 0) //Function that will take an error nu
 	{
 		Serial.println(" ");
 		Serial.print("ERROR 003!! Message not sent to ");
-		Serial.print(address);
+		Serial.print(Address);
 		Serial.println("!!");
 		Serial.println("Please restart!");
 
 		while (true) //Blink error LED
 		{
-			digitalWrite(errorLED, HIGH);
+			digitalWrite(ERROR_LED, HIGH);
 			delay(700);
-			digitalWrite(errorLED, LOW);
+			digitalWrite(ERROR_LED, LOW);
 			delay(700);
-		} 
+		}
 	}
 
 	else if (errorCode == 4)
@@ -229,7 +229,7 @@ void Error(int errorCode, int address = 0) //Function that will take an error nu
 
 		while (true)
 		{
-			digitalWrite(errorLED, HIGH);
+			digitalWrite(ERROR_LED, HIGH);
 
 		}
 	}
@@ -238,16 +238,16 @@ void Error(int errorCode, int address = 0) //Function that will take an error nu
 	{
 		Serial.println(" ");
 		Serial.print("ERROR 005!! Station ");
-		Serial.print(address);
+		Serial.print(Address);
 		Serial.println(" did not set message type!!");
 		Serial.println("Please restart!");
 
-	//	while (true)
-		//{
-			digitalWrite(errorLED, HIGH);
-			delay(800);
-			digitalWrite(errorLED, LOW);
-			delay(800);
+		//	while (true)
+			//{
+		digitalWrite(ERROR_LED, HIGH);
+		delay(800);
+		digitalWrite(ERROR_LED, LOW);
+		delay(800);
 		//}
 	}
 
@@ -260,9 +260,9 @@ void Error(int errorCode, int address = 0) //Function that will take an error nu
 
 		while (true)
 		{
-			digitalWrite(errorLED, HIGH);
+			digitalWrite(ERROR_LED, HIGH);
 			delay(200);
-			digitalWrite(errorLED, LOW);
+			digitalWrite(ERROR_LED, LOW);
 			delay(200);
 		}
 	}
@@ -279,16 +279,16 @@ void Error(int errorCode, int address = 0) //Function that will take an error nu
 	time = time + 5000;
 
 	while (radio.write(&message, sizeof(message)) != true)
-	{	
+	{
 		if (millis() > time)
 		{
 			Error(3, address);
-		} 
-	}	
+		}
+	}
 }*/
 
 
-void SendData(int TOaddress = 0, int Motion = 0, int Temperature = 0, String Command = "nul", int TypeofData = 0)
+void SendData(int ToAddress = 0, int Motion = 0, int Temperature = 0, String Command = "nul", int TypeOfData = 0)
 {
 	radio.openWritingPipe(MyAddress);
 	radio.stopListening();
@@ -302,148 +302,148 @@ void SendData(int TOaddress = 0, int Motion = 0, int Temperature = 0, String Com
 
 	Serial.println("  ");
 	Serial.println("/////////////");
-	Serial.println(TOaddress);
-	Serial.println(TypeofData);
+	Serial.println(ToAddress);
+	Serial.println(TypeOfData);
 	//Serial.println(Type[0]);
 	//Serial.println(data[0]);
 
 
 	///////////Send the address it wants to send to/////
-	unsigned long time = millis();
-	time = time + 5000;
+	unsigned long PastTime = millis();
+	PastTime = PastTime + 5000;
 
-	while (radio.write(&TOaddress, sizeof(TOaddress)) != true)
+	while (radio.write(&ToAddress, sizeof(ToAddress)) != true)
 	{
-		if (millis() > time)
+		if (millis() > PastTime)
 		{
-			Error(3, TOaddress);
+			Error(3, ToAddress);
 		}
 	}
 	delay(1000);
 
 	///////////Send my address ////////////////////////////
-	time = millis();
-	time = time + 5000;
+	PastTime = millis();
+	PastTime = PastTime + 5000;
 
 	while (radio.write(&MyAddress, sizeof(MyAddress)) != true)
 	{
-		if (millis() > time)
+		if (millis() > PastTime)
 		{
-			Error(3, TOaddress);
+			Error(3, ToAddress);
 		}
 	}
 	delay(1000);
 
 	///////////Tell the receiver how much data we are sending ////////////////////////////
-	time = millis();
-	time = time + 5000;
+	PastTime = millis();
+	PastTime = PastTime + 5000;
 
-	while (radio.write(&TypeofData, sizeof(TypeofData)) != true)
+	while (radio.write(&TypeOfData, sizeof(TypeOfData)) != true)
 	{
-		if (millis() > time)
+		if (millis() > PastTime)
 		{
-			Error(3, TOaddress);
+			Error(3, ToAddress);
 		}
 	}
 	delay(1000);
 
 	///////////////////Send the data////////////////////////////
-	time = millis();
-	time = time + 5000;
+	PastTime = millis();
+	PastTime = PastTime + 5000;
 
-	switch (TypeofData)
+	switch (TypeOfData)
 	{
-		case 1: //T
-			while (radio.write(&Temperature, sizeof(Temperature)) != true)
+	case 1: //T (Temperature data)
+		while (radio.write(&Temperature, sizeof(Temperature)) != true)
+		{
+			if (millis() > PastTime)
 			{
-				if (millis() > time)
-				{
-					Error(3, TOaddress);
-				}
+				Error(3, ToAddress);
 			}
-			delay(1000);
+		}
+		delay(1000);
 
-			Serial.println(" ");
-			Serial.print("Message(s) sent to ");
-			Serial.print(TOaddress);
+		Serial.println(" ");
+		Serial.print("Message(s) sent to ");
+		Serial.print(ToAddress);
 
-			break;
+		break;
 
-		case 2: //M
-			while (radio.write(&Motion, sizeof(Motion)) != true)
+	case 2: //M (motion data)
+		while (radio.write(&Motion, sizeof(Motion)) != true)
+		{
+			if (millis() > PastTime)
 			{
-				if (millis() > time)
-				{
-					Error(3, TOaddress);
-				}
+				Error(3, ToAddress);
 			}
-			delay(1000);
+		}
+		delay(1000);
 
-			Serial.println(" ");
-			Serial.print("Message(s) sent to ");
-			Serial.print(TOaddress);
+		Serial.println(" ");
+		Serial.print("Message(s) sent to ");
+		Serial.print(ToAddress);
 
-			break;
+		break;
 
-		case 3: //B
-			while (radio.write(&Temperature, sizeof(Temperature)) != true)
+	case 3: //B (motion and temperature data)
+		while (radio.write(&Temperature, sizeof(Temperature)) != true)
+		{
+			if (millis() > PastTime)
 			{
-				if (millis() > time)
-				{
-					Error(3, TOaddress);
-				}
+				Error(3, ToAddress);
 			}
-			delay(1000);
+		}
+		delay(1000);
 
 
-			while (radio.write(&Motion, sizeof(Motion)) != true)
+		while (radio.write(&Motion, sizeof(Motion)) != true)
+		{
+			if (millis() > PastTime)
 			{
-				if (millis() > time)
-				{
-					Error(3, TOaddress);
-				}
+				Error(3, ToAddress);
 			}
-			delay(1000);
+		}
+		delay(1000);
 
-			Serial.println(" ");
-			Serial.print(Temperature);
-			Serial.print(" & ");
-			Serial.print(Motion);
-			Serial.print(" sent to ");
-			Serial.println(TOaddress);
+		Serial.println(" ");
+		Serial.print(Temperature);
+		Serial.print(" & ");
+		Serial.print(Motion);
+		Serial.print(" sent to ");
+		Serial.println(ToAddress);
 
-			break;
+		break;
 
-		case 4: //C
-			while (radio.write(&Command, sizeof(Command)) != true)
+	case 4: //C (command data)
+		while (radio.write(&Command, sizeof(Command)) != true)
+		{
+			if (millis() > PastTime)
 			{
-				if (millis() > time)
-				{
-					Error(3, TOaddress);
-				}
+				Error(3, ToAddress);
 			}
-			delay(1000);
+		}
+		delay(1000);
 
-			Serial.println(" ");
-			Serial.print("Message(s) sent to ");
-			Serial.print(TOaddress);
+		Serial.println(" ");
+		Serial.print("Message(s) sent to ");
+		Serial.print(ToAddress);
 
-			break;
+		break;
 	}
 
 	digitalWrite(8, LOW);
 
-} 
+}
 
 
 void FirstPing()
 {
-	char messageS[] = "ping";
-	char messageR[5] = {0};
-	int time = 0;
-	bool flag = false;
+	const String MESSAGE_TO_SEND[] = { "ping" };
+	String ReceivedMessage = "";
+	int PastTime = 0;
+	bool MessageSent = false;
 
-	
+
 	switch (MyAddress)
 	{
 	case 9001:
@@ -451,24 +451,24 @@ void FirstPing()
 		Serial.println("case 9001 start");
 		for (int i = 0; i != 2; i++)//'i'= how many devices it will ping. // needs to be set one of the following values / '0' ==> 0 devices / '1' ==> 1 device / '2' ==> 2 devices / and so on... Default # is 6
 		{
-			
-			time = 0;
-			
-			flag = false;
+
+			PastTime = 0;
+
+			MessageSent = false;
 
 			radio.openWritingPipe(MyAddress);
 			radio.stopListening();
-			
+
 			Serial.println(" ");
 			Serial.print("Sending to ");
 			Serial.print(Range[i]); //1
 			Serial.print(" ...");
 
-			time = millis();
-			time = time + 4000;
-			while (radio.write(&messageS, sizeof(messageS)) != true)
+			PastTime = millis();
+			PastTime = PastTime + 4000;
+			while (radio.write(&MESSAGE_TO_SEND, sizeof(MESSAGE_TO_SEND)) != true)
 			{
-				if (millis() > time)
+				if (millis() > PastTime)
 				{
 					//Error(3, Range[i]);
 				}
@@ -480,7 +480,7 @@ void FirstPing()
 
 
 
-			radio.openReadingPipe(0, Station[1]); //Start listening for station2
+			radio.openReadingPipe(0, STATION[1]); //Start listening for station2
 			radio.startListening();
 
 			Serial.println(" ");
@@ -488,14 +488,14 @@ void FirstPing()
 			Serial.print(Range[i]); //1
 			Serial.print(" ...");
 
-			while (flag == false)
+			while (MessageSent == false)
 			{
 				if (radio.available())
 				{
-					radio.read(&messageR, sizeof(messageR));
+					radio.read(&ReceivedMessage, sizeof(ReceivedMessage));
 					Serial.println(" ");
-					Serial.print(messageR);
-					flag = true;
+					Serial.print(ReceivedMessage);
+					MessageSent = true;
 				}
 			}
 
@@ -506,7 +506,7 @@ void FirstPing()
 			/*Serial.println("");
 			Serial.print("Message is: ");
 			Serial.print(messageR); */
-		} 
+		}
 
 		Serial.println(" ");
 		Serial.println("case 9001 END");
@@ -516,51 +516,51 @@ void FirstPing()
 		Serial.println(" ");
 		Serial.println("case 9002 start");
 
-			flag = false;
+		MessageSent = false;
 
-			radio.openReadingPipe(0, Station[0]); //0
-			radio.startListening();
+		radio.openReadingPipe(0, STATION[0]); //0
+		radio.startListening();
+
+		Serial.println(" ");
+		Serial.print("Receiving from ");
+		Serial.print(STATION[0]); //0
+		Serial.print(" ...");
+
+		while (MessageSent == false)
+		{
+			if (radio.available())
+			{
+				radio.read(&ReceivedMessage, sizeof(ReceivedMessage));
+				Serial.println(" ");
+				Serial.print(ReceivedMessage);
+				MessageSent = true;
+			}
+		}
+
+		if (MessageSent == true)
+		{
+			radio.openWritingPipe(MyAddress);
+			radio.stopListening();
 
 			Serial.println(" ");
-			Serial.print("Receiving from ");
-			Serial.print(Station[0]); //0
+			Serial.print("Sending to ");
+			Serial.print(STATION[0]); //0
 			Serial.print(" ...");
-			
-			while (flag == false)
+
+			PastTime = millis();
+			PastTime = PastTime + 30000; //All the non-master hubs get a longer error PastTime to help make sure the master hub gets the responce 
+			while (radio.write(&MESSAGE_TO_SEND, sizeof(MESSAGE_TO_SEND)) != true)
 			{
-				if (radio.available())
+				if (millis() > PastTime)
 				{
-					radio.read(&messageR, sizeof(messageR));
-					Serial.println(" ");
-					Serial.print(messageR);
-					flag = true;
+					Error(3, Range[0]);
 				}
 			}
 
-			if (flag == true)
-			{
-				radio.openWritingPipe(MyAddress);
-				radio.stopListening();
-				
-				Serial.println(" ");
-				Serial.print("Sending to ");
-				Serial.print(Station[0]); //0
-				Serial.print(" ...");
-				
-				time = millis();
-				time = time + 30000; //All the non-master hubs get a longer error time to help make sure the master hub gets the responce 
-				while (radio.write(&messageS, sizeof(messageS)) != true)
-				{
-					if (millis() > time)
-					{
-						Error(3, Range[0]);
-					}
-				}
-
-				Serial.println("");
-				Serial.print("Message sent to ");
-				Serial.print(Station[0]); //0
-			}
+			Serial.println("");
+			Serial.print("Message sent to ");
+			Serial.print(STATION[0]); //0
+		}
 
 		Serial.println("");
 		Serial.println("case 9002 END");
@@ -570,9 +570,9 @@ void FirstPing()
 		Serial.println(" ");
 		Serial.println("case 9003 start");
 
-		flag = false;
+		MessageSent = false;
 
-		radio.openReadingPipe(0, Station[0]); //0
+		radio.openReadingPipe(0, STATION[0]); //0
 		radio.startListening();
 
 		Serial.println(" ");
@@ -580,18 +580,18 @@ void FirstPing()
 		Serial.print(Range[0]); //0
 		Serial.print(" ...");
 
-		while (flag == false)
+		while (MessageSent == false)
 		{
 			if (radio.available())
 			{
-				radio.read(&messageR, sizeof(messageR));
+				radio.read(&ReceivedMessage, sizeof(ReceivedMessage));
 				Serial.println(" ");
-				Serial.print(messageR);
-				flag = true;
+				Serial.print(ReceivedMessage);
+				MessageSent = true;
 			}
 		}
 
-		if (flag == true)
+		if (MessageSent == true)
 		{
 			radio.openWritingPipe(MyAddress);
 			radio.stopListening();
@@ -601,11 +601,11 @@ void FirstPing()
 			Serial.print(Range[0]); //0
 			Serial.print(" ...");
 
-			time = millis();
-			time = time + 30000; //All the non-master hubs get a longer error time to help make sure the master hub gets the responce 
-			while (radio.write(&messageS, sizeof(messageS)) != true)
+			PastTime = millis();
+			PastTime = PastTime + 30000; //All the non-master hubs get a longer error PastTime to help make sure the master hub gets the responce 
+			while (radio.write(&MESSAGE_TO_SEND, sizeof(MESSAGE_TO_SEND)) != true)
 			{
-				if (millis() > time)
+				if (millis() > PastTime)
 				{
 					Error(3, Range[0]);
 				}
@@ -624,42 +624,42 @@ void FirstPing()
 		Serial.println(" ");
 		Serial.println("case 9004 start");
 
-		flag = false;
+		MessageSent = false;
 
-		radio.openReadingPipe(0, Station[0]); //0
+		radio.openReadingPipe(0, STATION[0]); //0
 		radio.startListening();
 
 		Serial.println(" ");
 		Serial.print("Receiving from ");
-		Serial.print(Station[0]); //0
+		Serial.print(STATION[0]); //0
 		Serial.print(" ...");
 
-		while (flag == false)
+		while (MessageSent == false)
 		{
 			if (radio.available())
 			{
-				radio.read(&messageR, sizeof(messageR));
+				radio.read(&ReceivedMessage, sizeof(ReceivedMessage));
 				Serial.println(" ");
-				Serial.print(messageR);
-				flag = true;
+				Serial.print(ReceivedMessage);
+				MessageSent = true;
 			}
 		}
 
-		if (flag == true)
+		if (MessageSent == true)
 		{
 			radio.openWritingPipe(MyAddress);
 			radio.stopListening();
 
 			Serial.println(" ");
 			Serial.print("Sending to ");
-			Serial.print(Station[0]); //0
+			Serial.print(STATION[0]); //0
 			Serial.print(" ...");
 
-			time = millis();
-			time = time + 30000; //All the non-master hubs get a longer error time to help make sure the master hub gets the responce 
-			while (radio.write(&messageS, sizeof(messageS)) != true)
+			PastTime = millis();
+			PastTime = PastTime + 30000; //All the non-master hubs get a longer error PastTime to help make sure the master hub gets the responce 
+			while (radio.write(&MESSAGE_TO_SEND, sizeof(MESSAGE_TO_SEND)) != true)
 			{
-				if (millis() > time)
+				if (millis() > PastTime)
 				{
 					Error(3, Range[0]);
 				}
@@ -667,7 +667,7 @@ void FirstPing()
 
 			Serial.println("");
 			Serial.print("Message sent to ");
-			Serial.print(Station[0]); //0
+			Serial.print(STATION[0]); //0
 		}
 
 		Serial.println("");
@@ -678,42 +678,42 @@ void FirstPing()
 		Serial.println(" ");
 		Serial.println("case 9005 start");
 
-		flag = false;
+		MessageSent = false;
 
-		radio.openReadingPipe(0, Station[0]); //0
+		radio.openReadingPipe(0, STATION[0]); //0
 		radio.startListening();
 
 		Serial.println(" ");
 		Serial.print("Receiving from ");
-		Serial.print(Station[0]); //0
+		Serial.print(STATION[0]); //0
 		Serial.print(" ...");
 
-		while (flag == false)
+		while (MessageSent == false)
 		{
 			if (radio.available())
 			{
-				radio.read(&messageR, sizeof(messageR));
+				radio.read(&ReceivedMessage, sizeof(ReceivedMessage));
 				Serial.println(" ");
-				Serial.print(messageR);
-				flag = true;
+				Serial.print(ReceivedMessage);
+				MessageSent = true;
 			}
 		}
 
-		if (flag == true)
+		if (MessageSent == true)
 		{
 			radio.openWritingPipe(MyAddress);
 			radio.stopListening();
 
 			Serial.println(" ");
 			Serial.print("Sending to ");
-			Serial.print(Station[0]); //0
+			Serial.print(STATION[0]); //0
 			Serial.print(" ...");
 
-			time = millis();
-			time = time + 30000; //All the non-master hubs get a longer error time to help make sure the master hub gets the responce 
-			while (radio.write(&messageS, sizeof(messageS)) != true)
+			PastTime = millis();
+			PastTime = PastTime + 30000; //All the non-master hubs get a longer error PastTime to help make sure the master hub gets the responce 
+			while (radio.write(&MESSAGE_TO_SEND, sizeof(MESSAGE_TO_SEND)) != true)
 			{
-				if (millis() > time)
+				if (millis() > PastTime)
 				{
 					Error(3, Range[0]);
 				}
@@ -721,7 +721,7 @@ void FirstPing()
 
 			Serial.println("");
 			Serial.print("Message sent to ");
-			Serial.print(Station[0]); //0
+			Serial.print(STATION[0]); //0
 		}
 
 		Serial.println("");
@@ -732,42 +732,42 @@ void FirstPing()
 		Serial.println(" ");
 		Serial.println("case 9006 start");
 
-		flag = false;
+		MessageSent = false;
 
-		radio.openReadingPipe(0, Station[0]); //0
+		radio.openReadingPipe(0, STATION[0]); //0
 		radio.startListening();
 
 		Serial.println(" ");
 		Serial.print("Receiving from ");
-		Serial.print(Station[0]); //0
+		Serial.print(STATION[0]); //0
 		Serial.print(" ...");
 
-		while (flag == false)
+		while (MessageSent == false)
 		{
 			if (radio.available())
 			{
-				radio.read(&messageR, sizeof(messageR));
+				radio.read(&ReceivedMessage, sizeof(ReceivedMessage));
 				Serial.println(" ");
-				Serial.print(messageR);
-				flag = true;
+				Serial.print(ReceivedMessage);
+				MessageSent = true;
 			}
 		}
 
-		if (flag == true)
+		if (MessageSent == true)
 		{
 			radio.openWritingPipe(MyAddress);
 			radio.stopListening();
 
 			Serial.println(" ");
 			Serial.print("Sending to ");
-			Serial.print(Station[0]); //0
+			Serial.print(STATION[0]); //0
 			Serial.print(" ...");
 
-			time = millis();
-			time = time + 30000; //All the non-master hubs get a longer error time to help make sure the master hub gets the responce 
-			while (radio.write(&messageS, sizeof(messageS)) != true)
+			PastTime = millis();
+			PastTime = PastTime + 30000; //All the non-master hubs get a longer error PastTime to help make sure the master hub gets the responce 
+			while (radio.write(&MESSAGE_TO_SEND, sizeof(MESSAGE_TO_SEND)) != true)
 			{
-				if (millis() > time)
+				if (millis() > PastTime)
 				{
 					Error(3, Range[0]);
 				}
@@ -775,7 +775,7 @@ void FirstPing()
 
 			Serial.println("");
 			Serial.print("Message sent to ");
-			Serial.print(Station[0]); //0
+			Serial.print(STATION[0]); //0
 		}
 
 		Serial.println("");
@@ -786,42 +786,42 @@ void FirstPing()
 		Serial.println(" ");
 		Serial.println("case 9007 start");
 
-		flag = false;
+		MessageSent = false;
 
-		radio.openReadingPipe(0, Station[0]); //0
+		radio.openReadingPipe(0, STATION[0]); //0
 		radio.startListening();
 
 		Serial.println(" ");
 		Serial.print("Receiving from ");
-		Serial.print(Station[0]); //0
+		Serial.print(STATION[0]); //0
 		Serial.print(" ...");
 
-		while (flag == false)
+		while (MessageSent == false)
 		{
 			if (radio.available())
 			{
-				radio.read(&messageR, sizeof(messageR));
+				radio.read(&ReceivedMessage, sizeof(ReceivedMessage));
 				Serial.println(" ");
-				Serial.print(messageR);
-				flag = true;
+				Serial.print(ReceivedMessage);
+				MessageSent = true;
 			}
 		}
 
-		if (flag == true)
+		if (MessageSent == true)
 		{
 			radio.openWritingPipe(MyAddress);
 			radio.stopListening();
 
 			Serial.println(" ");
 			Serial.print("Sending to ");
-			Serial.print(Station[0]); //0
+			Serial.print(STATION[0]); //0
 			Serial.print(" ...");
 
-			time = millis();
-			time = time + 30000; //All the non-master hubs get a longer error time to help make sure the master hub gets the responce 
-			while (radio.write(&messageS, sizeof(messageS)) != true)
+			PastTime = millis();
+			PastTime = PastTime + 30000; //All the non-master hubs get a longer error time to help make sure the master hub gets the responce 
+			while (radio.write(&MESSAGE_TO_SEND, sizeof(MESSAGE_TO_SEND)) != true)
 			{
-				if (millis() > time)
+				if (millis() > PastTime)
 				{
 					Error(3, Range[0]);
 				}
@@ -829,14 +829,14 @@ void FirstPing()
 
 			Serial.println("");
 			Serial.print("Message sent to ");
-			Serial.print(Station[0]); //0
+			Serial.print(STATION[0]); //0
 		}
 
 		Serial.println("");
 		Serial.println("case 9007 END");
 		break;
 
-	//Need to add case 9008
+		//Need to add case 9008
 	}
 }
 
@@ -865,7 +865,7 @@ void FirstPing()
 
 /*void M_Convert(int Num)
 {
-	
+
 	String Holder = "";
 	int Digits = 0;
 
@@ -935,26 +935,26 @@ void Temperature(int Num = 0, int FROMaddress = 0)
 {
 	switch (FROMaddress)
 	{
-		case 9001:
-			temperature_01 = Num;
+	case 9001:
+		Hub01Temperature = Num;
 
-		case 9002:
-			temperature_02 = Num;
+	case 9002:
+		Hub02Temperature = Num;
 
-		case 9003:
-			temperature_03 = Num;
+	case 9003:
+		Hub03Temperature = Num;
 
-		case 9004:
-			temperature_04 = Num;
+	case 9004:
+		Hub04Temperature = Num;
 
-		case 9005:
-			temperature_05 = Num;
+	case 9005:
+		Hub05Temperature = Num;
 
-		case 9006:
-			temperature_05 = Num;
+	case 9006:
+		Hub06Temperature = Num;
 
-		case 9007:
-			temperature_05 = Num;
+	case 9007:
+		Hub07Temperature = Num;
 	}
 }
 
@@ -964,25 +964,25 @@ void Motion(int Num = 0, int FROMaddress = 0)
 	switch (FROMaddress)
 	{
 	case 9001:
-		MotionCount_01 = Num;
+		Hub01Motion = Num;
 
 	case 9002:
-		MotionCount_02 = Num;
+		Hub02Motion = Num;
 
 	case 9003:
-		MotionCount_03 = Num;
+		Hub03Motion = Num;
 
 	case 9004:
-		MotionCount_04 = Num;
+		Hub04Motion = Num;
 
 	case 9005:
-		MotionCount_05 = Num;
+		Hub05Motion = Num;
 
 	case 9006:
-		MotionCount_06 = Num;
+		Hub06Motion = Num;
 
 	case 9007:
-		MotionCount_07 = Num;
+		Hub07Motion = Num;
 	}
 }
 
@@ -998,31 +998,31 @@ void CommandCheck(int command)
 
 void DataReceive()
 {
-	int TOaddress = 0;
-	int FROMaddress = 0;
-	int TypeofData = 0;
-	int message_int = 0; //Setup variable that will hold the incoming integer message data
+	int ToAddress = 0;
+	int FromAddress = 0;
+	int TypeOfData = 0;
+	int IntegerMessage = 0; //Setup variable that will hold the incoming integer message data
 	//char message_str; //Setup variable that will hold the incoming string message data
 
-	radio.read(&message_int, sizeof(message_int)); //Get who this is addressed to
+	radio.read(&IntegerMessage, sizeof(IntegerMessage)); //Get who this is addressed to
 
-	TOaddress = message_int;
+	ToAddress = IntegerMessage;
 
 	//Serial.print("TOaddress: ");
 	//Serial.println(message_int);
 
 	//Will only read the remaing message if its addressed to itsself
-	if (TOaddress == MyAddress)
+	if (ToAddress == MyAddress)
 	{
 
 		////////////////Get sender's address////////////////////////////	
 		while (radio.available() != true) {} //Wait until a signal is available
 
-		message_int = 0;
+		IntegerMessage = 0;
 
-		radio.read(&message_int, sizeof(message_int));//Get sender's address
+		radio.read(&IntegerMessage, sizeof(IntegerMessage));//Get sender's address
 
-		FROMaddress = message_int;
+		FromAddress = IntegerMessage;
 
 		//Serial.print("FROMaddress: ");
 		//Serial.println(message_int);
@@ -1031,11 +1031,11 @@ void DataReceive()
 
 		/////////////////Get TypeofData////////////////////////////	
 		while (radio.available() != true) {} //Wait until a signal is available
-		
-		message_int = 0;
-		radio.read(&message_int, sizeof(message_int));//Get the number of how many messages will be sent
 
-		TypeofData = message_int;
+		IntegerMessage = 0;
+		radio.read(&IntegerMessage, sizeof(IntegerMessage));//Get the number of how many messages will be sent
+
+		TypeOfData = IntegerMessage;
 
 		//Serial.print("AmountofData: ");
 		//Serial.println(message_str);
@@ -1051,61 +1051,61 @@ void DataReceive()
 			//Serial.print("TYPE: ");
 			//Serial.println(message_str);
 
-			if (TypeofData == 2) // M
-			{
-				while (radio.available() != true) {} //Wait until a signal is available
-				message_int = 0;
-				radio.read(&message_int, sizeof(message_int));//Get the the motion data
+		if (TypeOfData == 2) // M
+		{
+			while (radio.available() != true) {} //Wait until a signal is available
+			IntegerMessage = 0;
+			radio.read(&IntegerMessage, sizeof(IntegerMessage));//Get the the motion data
 
-				Motion(message_int, FROMaddress);
-			}
+			Motion(IntegerMessage, FromAddress);
+		}
 
-			else if (TypeofData == 1) // T
-			{
-				while (radio.available() != true) {} //Wait until a signal is available
-				message_int = 0;
-				radio.read(&message_int, sizeof(message_int));//Get the temperature data
+		else if (TypeOfData == 1) // T
+		{
+			while (radio.available() != true) {} //Wait until a signal is available
+			IntegerMessage = 0;
+			radio.read(&IntegerMessage, sizeof(IntegerMessage));//Get the temperature data
 
-				Temperature(message_int, FROMaddress);
-			}
+			Temperature(IntegerMessage, FromAddress);
+		}
 
-			else if (TypeofData == 3) // B 
-			{
-				while (radio.available() != true) {} //Wait until a signal is available
-				message_int = 0;
-				radio.read(&message_int, sizeof(message_int));//Get the temperature data
+		else if (TypeOfData == 3) // B 
+		{
+			while (radio.available() != true) {} //Wait until a signal is available
+			IntegerMessage = 0;
+			radio.read(&IntegerMessage, sizeof(IntegerMessage));//Get the temperature data
 
-				Temperature(message_int, FROMaddress);
+			Temperature(IntegerMessage, FromAddress);
 
-				while (radio.available() != true) {} //Wait until a signal is available
-				message_int = 0;
-				radio.read(&message_int, sizeof(message_int));//Get the motion data
+			while (radio.available() != true) {} //Wait until a signal is available
+			IntegerMessage = 0;
+			radio.read(&IntegerMessage, sizeof(IntegerMessage));//Get the motion data
 
-				Motion(message_int, FROMaddress);
+			Motion(IntegerMessage, FromAddress);
 
-				Serial.println(" ");
-				Serial.println("/////////// ");
-				Serial.println(message_int);
+			Serial.println(" ");
+			Serial.println("/////////// ");
+			Serial.println(IntegerMessage);
 
-			}
+		}
 
-			else if (TypeofData == 4) // C
-			{
-				while (radio.available() != true) {} //Wait until a signal is available
-				message_int = 0;
-				radio.read(&message_int, sizeof(message_int));//Get command
+		else if (TypeOfData == 4) // C
+		{
+			while (radio.available() != true) {} //Wait until a signal is available
+			IntegerMessage = 0;
+			radio.read(&IntegerMessage, sizeof(IntegerMessage));//Get command
 
-				CommandCheck(message_int);
-			}
+			CommandCheck(IntegerMessage);
+		}
 
-			else
-			{
-				
-				Serial.print("TYPE: ");
-				Serial.println(TypeofData);
+		else
+		{
 
-				Error(5, FROMaddress);
-			}
+			Serial.print("TYPE: ");
+			Serial.println(TypeOfData);
+
+			Error(5, FromAddress);
+		}
 
 		Serial.println(" ");  //Debug Only
 		Serial.println("END");  //Debug Only

@@ -22,7 +22,7 @@ RF24 radio(9, 10);
 DHT dht(DHTPIN, DHTTYPE); // Initialize temp sensor
 
 //Set the addresses for all stations
-const int Station[8] = { 9001, 9002, 9003, 9004, 9005, 9006, 9007, 9008 };
+const int STATION[8] = { 9001, 9002, 9003, 9004, 9005, 9006, 9007, 9008 };
 
 int *Range = new int[5];
 
@@ -31,38 +31,38 @@ int MotionCount = 0;
 float TemperatureCount = 0;
 
 //Set Arduino pins
-const byte switchIn_1 = 2;
-const byte switchIn_2 = 3;
-const byte switchIn_3 = 4;
-const byte errorLED = 7;
+const byte SWITCH_IN_1 = 2;
+const byte SWITCH_IN_2 = 3;
+const byte SWITCH_IN_3 = 4;
+const byte ERROR_LED = 7;
 const byte PIR = 5;
 
 int MyAddress = 9999; //Set up station's personal address. Set to 9999 to catch errors
 
 //Setup variables that will hold time data
-unsigned long time1 = 0;
-unsigned long time2 = 0;
+unsigned long PastTime1 = 0;
+unsigned long PastTime2 = 0;
 
-const int SendTime = 10000; //Time it takes a hub to completly send a message
-const int BaseCycleTime = 6000; //Time between data transmissions (in milliseconds) //Base time will be multiplied by each stations number so each hub will send data at different times 
-const int ReadCyle = 3500;  //Time between reading the temp sensor (in milliseconds)  1000 = 1sec
+const int SEND_TIME = 10000; //Time it takes a hub to completly send a message
+const int BASE_CYCLE_TIME = 6000; //Time between data transmissions (in milliseconds) //Base time will be multiplied by each stations number so each hub will send data at different times 
+const int READ_CYCLE = 3500;  //Time between reading the temp sensor (in milliseconds)  1000 = 1sec
 int CycleTime = 0;  //Time between data transmissions
 
-bool flag = true;
+//bool flag = true;
 
 
 //Value holders VV ///
 
 //Setup a variable that will hold the temperature
 //There are a total of 8 to hold data from each hub
-int temperature_01 = 0;
-int temperature_02 = 0;
-int temperature_03 = 0;
-int temperature_04 = 0;
-int temperature_05 = 0;
-int temperature_06 = 0;
-int temperature_07 = 0;
-int temperature_08 = 0;
+int Hub01Temperature = 0;
+int Hub02Temperature = 0;
+int Hub03Temperature = 0;
+int Hub04Temperature = 0;
+int Hub05Temperature = 0;
+int Hub06Temperature = 0;
+int Hub07Temperature = 0;
+int Hub08Temperature = 0;
 
 //Setup a variable that will hold the humidity
 //There are a total of 8 to hold data from each hub
@@ -77,14 +77,14 @@ int humidity_08 = 0;  */
 
 //Setup a variable that will hold the number of times the PIR sensor was activated
 //There are a total of 8 to hold data from each hub
-int MotionCount_01 = 0;
-int MotionCount_02 = 0;
-int MotionCount_03 = 0;
-int MotionCount_04 = 0;
-int MotionCount_05 = 0;
-int MotionCount_06 = 0;
-int MotionCount_07 = 0;
-int MotionCount_08 = 0;
+int Hub01Motion = 0;
+int Hub02Motion = 0;
+int Hub03Motion = 0;
+int Hub04Motion = 0;
+int Hub05Motion = 0;
+int Hub06Motion = 0;
+int Hub07Motion = 0;
+int Hub08Motion = 0;
 
 
 
@@ -99,11 +99,11 @@ void setup()
 	dht.begin();
 
 	//Setup pins
-	pinMode(switchIn_1, INPUT);
-	pinMode(switchIn_2, INPUT);
-	pinMode(switchIn_3, INPUT);
+	pinMode(SWITCH_IN_1, INPUT);
+	pinMode(SWITCH_IN_2, INPUT);
+	pinMode(SWITCH_IN_3, INPUT);
 	pinMode(PIR, INPUT);
-	pinMode(errorLED, OUTPUT);
+	pinMode(ERROR_LED, OUTPUT);
 	pinMode(8, OUTPUT);
 
 	digitalWrite(8, HIGH);
@@ -144,19 +144,19 @@ void loop()
 	digitalWrite(8, LOW);
 	int holder = 0;
 	int counter = 0;
-	//bool flag2 = false;
-	time1 = millis();
-	time2 = time1;
+	bool PIRisNotConected = true;
+	PastTime1 = millis();
+	PastTime2 = PastTime1;
 
 	while (true)
 	{
 
 		//Send the data to the master hub(or closest hub) at timed intervals defined by the CycleTime variable
 		//....Hope to add a clock in the future to help keep better timing
-		if (millis() > time1 + CycleTime)
+		if (millis() > PastTime1 + CycleTime)
 		{
 
-			flag = false; //Set the error flag to false
+			PIRisNotConected = false; //Set the error flag to false
 
 			//delay(200 + (1000 * (MyAddress - 9000)));
 
@@ -178,8 +178,8 @@ void loop()
 			{
 				TemperatureCount = TemperatureCount / counter; //average the readings from the DHT
 
-				temperature_01 = TemperatureCount;
-				MotionCount_01 = MotionCount;
+				Hub01Temperature = TemperatureCount;
+				Hub01Motion = MotionCount;
 
 				TemperatureCount = 0;
 				MotionCount = 0;
@@ -188,7 +188,7 @@ void loop()
 
 
 			//Reset the timer
-			time1 = millis();
+			PastTime1 = millis();
 		}
 
 
@@ -196,7 +196,7 @@ void loop()
 		if (digitalRead(PIR) == HIGH)
 		{
 
-			if (flag == true)//Check to see if PIR sensor is conected
+			if (PIRisNotConected == true)//Check to see if PIR sensor is conected
 			{
 				//Error(2);  //UNCOMMENT AFTER DEBUG!!!
 			}
@@ -210,7 +210,7 @@ void loop()
 
 
 		//Read data from the DHT sensor at timed intervals defiend by the ReadCycle variable
-		if (millis() > time2 + ReadCyle)
+		if (millis() > PastTime2 + READ_CYCLE)
 		{
 			holder = dht.readTemperature(true);
 
@@ -223,7 +223,7 @@ void loop()
 
 			counter++;
 
-			time2 = millis();
+			PastTime2 = millis();
 		}
 
 		//See if there are any incoming messages  
@@ -238,36 +238,36 @@ void loop()
 
 				Serial.println("  ");
 				Serial.print("9001 -- Motion: ");
-				Serial.println(MotionCount_01);
+				Serial.println(Hub01Motion);
 				Serial.print("9001 -- Temperature: ");
-				Serial.println(temperature_01);
+				Serial.println(Hub01Temperature);
 
 				Serial.println("  ");
 				Serial.print("9002 -- Motion: ");
-				Serial.println(MotionCount_02);
+				Serial.println(Hub02Motion);
 				Serial.print("9002 -- Temperature: ");
-				Serial.println(temperature_02);
+				Serial.println(Hub02Temperature);
 
 				Serial.println("  ");
 				Serial.print("9003 -- Motion: ");
-				Serial.println(MotionCount_03);
+				Serial.println(Hub03Motion);
 				Serial.print("9003 -- Temperature: ");
-				Serial.println(temperature_03);
+				Serial.println(Hub03Temperature);
 
 				/*	Serial.print("9004 -- Motion: ");
-					Serial.println(MotionCount_04);
+					Serial.println(Hub04Motion);
 					Serial.print("9004 -- Temperature: ");
-					Serial.println(temperature_04);
+					Serial.println(Hub04Temperature);
 
 					Serial.print("9005 -- Motion: ");
-					Serial.println(MotionCount_05);
+					Serial.println(Hub05Motion);
 					Serial.print("9005 -- Temperature: ");
-					Serial.println(temperature_05);
+					Serial.println(Hub05Temperature);
 
 					Serial.print("9006 -- Motion: ");
-					Serial.println(MotionCount_06);
+					Serial.println(Hub06Motion);
 					Serial.print("9006 -- Temperature: ");
-					Serial.println(temperature_06); */
+					Serial.println(Hub06Temperature); */
 			}
 		}
 
