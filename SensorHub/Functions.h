@@ -443,7 +443,6 @@ void FirstPing()
 	int PastTime = 0;
 	bool MessageSent = false;
 
-
 	switch (MyAddress)
 	{
 	case 9001:

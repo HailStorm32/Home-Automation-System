@@ -26,9 +26,7 @@ const int STATION[8] = { 9001, 9002, 9003, 9004, 9005, 9006, 9007, 9008 };
 
 int *Range = new int[5];
 
-//Variables to hold this stations senser data
-int MotionCount = 0;
-float TemperatureCount = 0;
+
 
 //Set Arduino pins
 const byte SWITCH_IN_1 = 2;
@@ -47,8 +45,6 @@ const int SEND_TIME = 10000; //Time it takes a hub to completly send a message
 const int BASE_CYCLE_TIME = 6000; //Time between data transmissions (in milliseconds) //Base time will be multiplied by each stations number so each hub will send data at different times 
 const int READ_CYCLE = 3500;  //Time between reading the temp sensor (in milliseconds)  1000 = 1sec
 int CycleTime = 0;  //Time between data transmissions
-
-//bool flag = true;
 
 
 //Value holders VV ///
@@ -111,14 +107,14 @@ void setup()
 	SetAddress();
 
 	//Make sure station address was set correctly
-	if (MyAddress == 9999 || MyAddress < 8999) //If the variable for this station's address is still the default value, give an error
-	{
-		Error(1);
-	}
-	else
+	if (MyAddress <= 9008 && MyAddress > 9000) //If the variable for this station's address is still the default value, give an error
 	{
 		Serial.println("Address is: ");
 		Serial.println(MyAddress);  //Print the hub's address
+	}
+	else
+	{
+		Error(1);
 	}
 
 	SetReadRange(); //Set which stations this current station can receive from based on its address
@@ -141,6 +137,16 @@ void setup()
 
 void loop()
 {
+	///////-VARIABLE DECLARATIONS-//////// 
+	
+	//Variables to hold this stations senser data
+	int MotionCount = 0;
+	float TemperatureCount = 0;
+
+
+	///////-VARIABLE DECLARATIONS-//////// 
+	
+	
 	digitalWrite(8, LOW);
 	int MathHolder = 0;
 	int counter = 0;
