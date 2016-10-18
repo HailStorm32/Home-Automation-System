@@ -17,4 +17,5 @@ C:\Users\demet\AppData\Local\Temp\VMicroBuilds\SensorHub\nano_atmega328\SensorHu
  C:\Users\demet\Documents\Arduino\libraries\RF24/nRF24L01.h \
  C:\Users\demet\Documents\Arduino\libraries\RF24/RF24.h \
  C:\Users\demet\Documents\Arduino\libraries\RF24/RF24_config.h \
+ C:\Users\demet\Documents\Arduino\libraries\DHT-sensor-library-master/DHT.h \
  C:\Users\demet\AppData\Local\Temp\VMicroBuilds\SensorHub\nano_atmega328\Functions.h
