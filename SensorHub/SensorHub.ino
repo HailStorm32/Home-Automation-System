@@ -142,7 +142,7 @@ void setup()
 void loop()
 {
 	digitalWrite(8, LOW);
-	int holder = 0;
+	int MathHolder = 0;
 	int counter = 0;
 	bool PIRisNotConected = true;
 	PastTime1 = millis();
@@ -212,11 +212,11 @@ void loop()
 		//Read data from the DHT sensor at timed intervals defiend by the ReadCycle variable
 		if (millis() > PastTime2 + READ_CYCLE)
 		{
-			holder = dht.readTemperature(true);
+			MathHolder = dht.readTemperature(true);
 
-			TemperatureCount = TemperatureCount + holder;
+			TemperatureCount = TemperatureCount + MathHolder;
 
-			if (isnan(holder))
+			if (isnan(MathHolder))
 			{
 				Error(6);
 			}
