@@ -3,7 +3,7 @@
 //					This code by Demetrius Van Sickle is licensed under a						//
 //				Creative Commons Attribution-NonCommercial 4.0 International License.			//
 //																								//
-//	The nRF24L01 and DHT libries used in this code are coppyrighted by their respective owners	//
+//	The nRF24L01 and DHT libries used in this code are licensed by their respective owners	//
 //					and are issued under the GNU General Public License version 2.				//
 //																							    //
 //**********************************************************************************************//
@@ -25,7 +25,6 @@ DHT dht(DHTPIN, DHTTYPE); // Initialize temp sensor
 const int STATION[8] = { 9001, 9002, 9003, 9004, 9005, 9006, 9007, 9008 };
 
 int *Range = new int[5];
-
 
 
 //Set Arduino pins
@@ -119,19 +118,28 @@ void setup()
 
 	SetReadRange(); //Set which stations this current station can receive from based on its address
 
+	//radio.openReadingPipe(0, Range[0]);
+	radio.openReadingPipe(1, Range[0]);
+	radio.openReadingPipe(2, Range[1]);
+	radio.openReadingPipe(3, Range[2]);
+	radio.openReadingPipe(4, Range[3]);
+	radio.openWritingPipe(MyAddress);
+
+	radio.startListening();
+
 	delay(1000); //Delay to allow for buffer time
 
 	FirstPing();//Have the master station ping all other stations 
 
 	//Set the reading pipes
-	radio.openReadingPipe(0, Range[0]);
+	/*radio.openReadingPipe(0, Range[0]);
 	radio.openReadingPipe(1, Range[1]);
 	radio.openReadingPipe(2, Range[2]);
 	radio.openReadingPipe(3, Range[3]);
 	radio.openReadingPipe(4, Range[4]);
-	//radio.openReadingPipe(5, Range[5]);
+	//radio.openReadingPipe(5, Range[5]);*/
 
-	radio.startListening();
+	//radio.startListening();
 
 }
 

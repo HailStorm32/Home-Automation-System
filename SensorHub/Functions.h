@@ -3,7 +3,7 @@
 //					This code by Demetrius Van Sickle is licensed under a						//
 //				Creative Commons Attribution-NonCommercial 4.0 International License.			//
 //																								//
-//	The nRF24L01 and DHT libries used in this code are coppyrighted by their respective owners	//
+//	The nRF24L01 and DHT libries used in this code are licensed by their respective owners		//
 //					and are issued under the GNU General Public License version 2.				//
 //																							    //
 //**********************************************************************************************//
@@ -274,7 +274,7 @@ void Error(int errorCode, int Address = 0) //Function that will take an error nu
 {
 	radio.stopListening();
 	radio.openWritingPipe(MyAddress);
-	
+
 
 	unsigned long time = millis();
 	time = time + 5000;
@@ -442,6 +442,7 @@ void FirstPing()
 	const String MESSAGE_TO_SEND[] = { "ping" };
 	String ReceivedMessage = "";
 	int PastTime = 0;
+	bool MessageReceived = false;
 	bool MessageSent = false;
 
 	switch (MyAddress)
@@ -454,11 +455,11 @@ void FirstPing()
 
 			PastTime = 0;
 
-			MessageSent = false;
+			MessageReceived = false;
 
 			radio.stopListening();
-			radio.openWritingPipe(MyAddress);
-			
+			//radio.openWritingPipe(MyAddress);
+
 
 			Serial.println(" ");
 			Serial.print("Sending to ");
@@ -467,12 +468,10 @@ void FirstPing()
 
 			PastTime = millis();
 			PastTime = PastTime + 4000;
-			while (radio.write(&MESSAGE_TO_SEND, sizeof(MESSAGE_TO_SEND)) != true)
+
+			if (radio.write(&MESSAGE_TO_SEND, sizeof(MESSAGE_TO_SEND)))
 			{
-				if (millis() > PastTime)
-				{
-					//Error(3, Range[i]);
-				}
+				Error(3, Range[i]);
 			}
 
 			Serial.println(" ");
@@ -481,7 +480,7 @@ void FirstPing()
 
 
 
-			radio.openReadingPipe(0, STATION[1]); //Start listening for station2
+			//radio.openReadingPipe(0, STATION[1]); //Start listening for station2
 			radio.startListening();
 
 			Serial.println(" ");
@@ -489,16 +488,13 @@ void FirstPing()
 			Serial.print(Range[i]); //1
 			Serial.print(" ...");
 
-			while (MessageSent == false)
-			{
-				if (radio.available())
-				{
-					radio.read(&ReceivedMessage, sizeof(ReceivedMessage));
-					Serial.println(" ");
-					Serial.print(ReceivedMessage);
-					MessageSent = true;
-				}
-			}
+			while (!radio.available()) {}
+
+			radio.read(&ReceivedMessage, sizeof(ReceivedMessage));
+			Serial.println(" ");
+			Serial.print(ReceivedMessage);
+			MessageReceived = true;
+
 
 			Serial.println(" ");
 			Serial.print("Message Received from ");
@@ -517,9 +513,9 @@ void FirstPing()
 		Serial.println(" ");
 		Serial.println("case 9002 start");
 
-		MessageSent = false;
+		MessageReceived = false;
 
-		radio.openReadingPipe(0, STATION[0]); //0
+		//radio.openReadingPipe(0, STATION[0]); //0
 		radio.startListening();
 
 		Serial.println(" ");
@@ -527,21 +523,18 @@ void FirstPing()
 		Serial.print(STATION[0]); //0
 		Serial.print(" ...");
 
-		while (MessageSent == false)
-		{
-			if (radio.available())
-			{
-				radio.read(&ReceivedMessage, sizeof(ReceivedMessage));
-				Serial.println(" ");
-				Serial.print(ReceivedMessage);
-				MessageSent = true;
-			}
-		}
 
-		if (MessageSent == true)
+		while (!radio.available()) {}
+
+		radio.read(&ReceivedMessage, sizeof(ReceivedMessage));
+		Serial.println(" ");
+		Serial.print(ReceivedMessage);
+		MessageReceived = true;
+
+		if (MessageReceived == true)
 		{
 			radio.stopListening();
-			radio.openWritingPipe(MyAddress);
+			//	radio.openWritingPipe(MyAddress);
 
 			Serial.println(" ");
 			Serial.print("Sending to ");
@@ -550,12 +543,9 @@ void FirstPing()
 
 			PastTime = millis();
 			PastTime = PastTime + 30000; //All the non-master hubs get a longer error PastTime to help make sure the master hub gets the responce 
-			while (radio.write(&MESSAGE_TO_SEND, sizeof(MESSAGE_TO_SEND)) != true)
+			if (radio.write(&MESSAGE_TO_SEND, sizeof(MESSAGE_TO_SEND)))
 			{
-				if (millis() > PastTime)
-				{
-					Error(3, Range[0]);
-				}
+				Error(3, Range[0]);
 			}
 
 			Serial.println("");
@@ -571,9 +561,9 @@ void FirstPing()
 		Serial.println(" ");
 		Serial.println("case 9003 start");
 
-		MessageSent = false;
+		MessageReceived = false;
 
-		radio.openReadingPipe(0, STATION[0]); //0
+		//radio.openReadingPipe(0, STATION[0]); //0
 		radio.startListening();
 
 		Serial.println(" ");
@@ -581,21 +571,19 @@ void FirstPing()
 		Serial.print(Range[0]); //0
 		Serial.print(" ...");
 
-		while (MessageSent == false)
-		{
-			if (radio.available())
-			{
-				radio.read(&ReceivedMessage, sizeof(ReceivedMessage));
-				Serial.println(" ");
-				Serial.print(ReceivedMessage);
-				MessageSent = true;
-			}
-		}
 
-		if (MessageSent == true)
+		while (!radio.available()) {}
+
+		radio.read(&ReceivedMessage, sizeof(ReceivedMessage));
+		Serial.println(" ");
+		Serial.print(ReceivedMessage);
+		MessageReceived = true;
+
+
+		if (MessageReceived == true)
 		{
 			radio.stopListening();
-			radio.openWritingPipe(MyAddress);
+			//radio.openWritingPipe(MyAddress);
 
 			Serial.println(" ");
 			Serial.print("Sending to ");
@@ -604,12 +592,9 @@ void FirstPing()
 
 			PastTime = millis();
 			PastTime = PastTime + 30000; //All the non-master hubs get a longer error PastTime to help make sure the master hub gets the responce 
-			while (radio.write(&MESSAGE_TO_SEND, sizeof(MESSAGE_TO_SEND)) != true)
+			if (radio.write(&MESSAGE_TO_SEND, sizeof(MESSAGE_TO_SEND)))
 			{
-				if (millis() > PastTime)
-				{
-					Error(3, Range[0]);
-				}
+				Error(3, Range[0]);
 			}
 
 			Serial.println("");
@@ -625,9 +610,9 @@ void FirstPing()
 		Serial.println(" ");
 		Serial.println("case 9004 start");
 
-		MessageSent = false;
+		MessageReceived = false;
 
-		radio.openReadingPipe(0, STATION[0]); //0
+		//radio.openReadingPipe(0, STATION[0]); //0
 		radio.startListening();
 
 		Serial.println(" ");
@@ -635,21 +620,17 @@ void FirstPing()
 		Serial.print(STATION[0]); //0
 		Serial.print(" ...");
 
-		while (MessageSent == false)
-		{
-			if (radio.available())
-			{
-				radio.read(&ReceivedMessage, sizeof(ReceivedMessage));
-				Serial.println(" ");
-				Serial.print(ReceivedMessage);
-				MessageSent = true;
-			}
-		}
+		while (!radio.available()) {}
 
-		if (MessageSent == true)
+		radio.read(&ReceivedMessage, sizeof(ReceivedMessage));
+		Serial.println(" ");
+		Serial.print(ReceivedMessage);
+		MessageReceived = true;
+
+		if (MessageReceived == true)
 		{
 			radio.stopListening();
-			radio.openWritingPipe(MyAddress);
+			//radio.openWritingPipe(MyAddress);
 
 			Serial.println(" ");
 			Serial.print("Sending to ");
@@ -658,12 +639,9 @@ void FirstPing()
 
 			PastTime = millis();
 			PastTime = PastTime + 30000; //All the non-master hubs get a longer error PastTime to help make sure the master hub gets the responce 
-			while (radio.write(&MESSAGE_TO_SEND, sizeof(MESSAGE_TO_SEND)) != true)
+			if (radio.write(&MESSAGE_TO_SEND, sizeof(MESSAGE_TO_SEND)))
 			{
-				if (millis() > PastTime)
-				{
-					Error(3, Range[0]);
-				}
+				Error(3, Range[0]);
 			}
 
 			Serial.println("");
@@ -679,9 +657,9 @@ void FirstPing()
 		Serial.println(" ");
 		Serial.println("case 9005 start");
 
-		MessageSent = false;
+		MessageReceived = false;
 
-		radio.openReadingPipe(0, STATION[0]); //0
+		//radio.openReadingPipe(0, STATION[0]); //0
 		radio.startListening();
 
 		Serial.println(" ");
@@ -689,21 +667,17 @@ void FirstPing()
 		Serial.print(STATION[0]); //0
 		Serial.print(" ...");
 
-		while (MessageSent == false)
-		{
-			if (radio.available())
-			{
-				radio.read(&ReceivedMessage, sizeof(ReceivedMessage));
-				Serial.println(" ");
-				Serial.print(ReceivedMessage);
-				MessageSent = true;
-			}
-		}
+		while (!radio.available()) {}
 
-		if (MessageSent == true)
+		radio.read(&ReceivedMessage, sizeof(ReceivedMessage));
+		Serial.println(" ");
+		Serial.print(ReceivedMessage);
+		MessageReceived = true;
+
+		if (MessageReceived == true)
 		{
 			radio.stopListening();
-			radio.openWritingPipe(MyAddress);
+			//radio.openWritingPipe(MyAddress);
 
 			Serial.println(" ");
 			Serial.print("Sending to ");
@@ -712,12 +686,9 @@ void FirstPing()
 
 			PastTime = millis();
 			PastTime = PastTime + 30000; //All the non-master hubs get a longer error PastTime to help make sure the master hub gets the responce 
-			while (radio.write(&MESSAGE_TO_SEND, sizeof(MESSAGE_TO_SEND)) != true)
+			if (radio.write(&MESSAGE_TO_SEND, sizeof(MESSAGE_TO_SEND)))
 			{
-				if (millis() > PastTime)
-				{
-					Error(3, Range[0]);
-				}
+				Error(3, Range[0]);
 			}
 
 			Serial.println("");
@@ -733,9 +704,9 @@ void FirstPing()
 		Serial.println(" ");
 		Serial.println("case 9006 start");
 
-		MessageSent = false;
+		MessageReceived = false;
 
-		radio.openReadingPipe(0, STATION[0]); //0
+		//radio.openReadingPipe(0, STATION[0]); //0
 		radio.startListening();
 
 		Serial.println(" ");
@@ -743,21 +714,18 @@ void FirstPing()
 		Serial.print(STATION[0]); //0
 		Serial.print(" ...");
 
-		while (MessageSent == false)
-		{
-			if (radio.available())
-			{
-				radio.read(&ReceivedMessage, sizeof(ReceivedMessage));
-				Serial.println(" ");
-				Serial.print(ReceivedMessage);
-				MessageSent = true;
-			}
-		}
+		while (!radio.available()) {}
 
-		if (MessageSent == true)
+		radio.read(&ReceivedMessage, sizeof(ReceivedMessage));
+		Serial.println(" ");
+		Serial.print(ReceivedMessage);
+		MessageReceived = true;
+
+
+		if (MessageReceived == true)
 		{
 			radio.stopListening();
-			radio.openWritingPipe(MyAddress);
+			//radio.openWritingPipe(MyAddress);
 
 			Serial.println(" ");
 			Serial.print("Sending to ");
@@ -766,12 +734,9 @@ void FirstPing()
 
 			PastTime = millis();
 			PastTime = PastTime + 30000; //All the non-master hubs get a longer error PastTime to help make sure the master hub gets the responce 
-			while (radio.write(&MESSAGE_TO_SEND, sizeof(MESSAGE_TO_SEND)) != true)
+			if (radio.write(&MESSAGE_TO_SEND, sizeof(MESSAGE_TO_SEND)))
 			{
-				if (millis() > PastTime)
-				{
-					Error(3, Range[0]);
-				}
+				Error(3, Range[0]);
 			}
 
 			Serial.println("");
@@ -787,9 +752,9 @@ void FirstPing()
 		Serial.println(" ");
 		Serial.println("case 9007 start");
 
-		MessageSent = false;
+		MessageReceived = false;
 
-		radio.openReadingPipe(0, STATION[0]); //0
+		//radio.openReadingPipe(0, STATION[0]); //0
 		radio.startListening();
 
 		Serial.println(" ");
@@ -797,21 +762,18 @@ void FirstPing()
 		Serial.print(STATION[0]); //0
 		Serial.print(" ...");
 
-		while (MessageSent == false)
-		{
-			if (radio.available())
-			{
-				radio.read(&ReceivedMessage, sizeof(ReceivedMessage));
-				Serial.println(" ");
-				Serial.print(ReceivedMessage);
-				MessageSent = true;
-			}
-		}
+		while (!radio.available()) {}
 
-		if (MessageSent == true)
+		radio.read(&ReceivedMessage, sizeof(ReceivedMessage));
+		Serial.println(" ");
+		Serial.print(ReceivedMessage);
+		MessageReceived = true;
+
+
+		if (MessageReceived == true)
 		{
 			radio.stopListening();
-			radio.openWritingPipe(MyAddress);
+			//radio.openWritingPipe(MyAddress);
 
 			Serial.println(" ");
 			Serial.print("Sending to ");
@@ -820,12 +782,9 @@ void FirstPing()
 
 			PastTime = millis();
 			PastTime = PastTime + 30000; //All the non-master hubs get a longer error time to help make sure the master hub gets the responce 
-			while (radio.write(&MESSAGE_TO_SEND, sizeof(MESSAGE_TO_SEND)) != true)
+			if (radio.write(&MESSAGE_TO_SEND, sizeof(MESSAGE_TO_SEND)))
 			{
-				if (millis() > PastTime)
-				{
-					Error(3, Range[0]);
-				}
+				Error(3, Range[0]);
 			}
 
 			Serial.println("");
