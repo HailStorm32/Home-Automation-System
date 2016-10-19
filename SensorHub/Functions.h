@@ -272,8 +272,9 @@ void Error(int errorCode, int Address = 0) //Function that will take an error nu
 
 /*void SendText(char message[] = {0}, int address = 0)
 {
-	radio.openWritingPipe(MyAddress);
 	radio.stopListening();
+	radio.openWritingPipe(MyAddress);
+	
 
 	unsigned long time = millis();
 	time = time + 5000;
@@ -290,8 +291,8 @@ void Error(int errorCode, int Address = 0) //Function that will take an error nu
 
 void SendData(int ToAddress = 0, int Motion = 0, int Temperature = 0, String Command = "nul", int TypeOfData = 0)
 {
-	radio.openWritingPipe(MyAddress);
 	radio.stopListening();
+	radio.openWritingPipe(MyAddress);
 
 	digitalWrite(8, HIGH);
 
@@ -455,8 +456,9 @@ void FirstPing()
 
 			MessageSent = false;
 
-			radio.openWritingPipe(MyAddress);
 			radio.stopListening();
+			radio.openWritingPipe(MyAddress);
+			
 
 			Serial.println(" ");
 			Serial.print("Sending to ");
@@ -538,8 +540,8 @@ void FirstPing()
 
 		if (MessageSent == true)
 		{
-			radio.openWritingPipe(MyAddress);
 			radio.stopListening();
+			radio.openWritingPipe(MyAddress);
 
 			Serial.println(" ");
 			Serial.print("Sending to ");
@@ -592,8 +594,8 @@ void FirstPing()
 
 		if (MessageSent == true)
 		{
-			radio.openWritingPipe(MyAddress);
 			radio.stopListening();
+			radio.openWritingPipe(MyAddress);
 
 			Serial.println(" ");
 			Serial.print("Sending to ");
@@ -646,8 +648,8 @@ void FirstPing()
 
 		if (MessageSent == true)
 		{
-			radio.openWritingPipe(MyAddress);
 			radio.stopListening();
+			radio.openWritingPipe(MyAddress);
 
 			Serial.println(" ");
 			Serial.print("Sending to ");
@@ -700,8 +702,8 @@ void FirstPing()
 
 		if (MessageSent == true)
 		{
-			radio.openWritingPipe(MyAddress);
 			radio.stopListening();
+			radio.openWritingPipe(MyAddress);
 
 			Serial.println(" ");
 			Serial.print("Sending to ");
@@ -754,8 +756,8 @@ void FirstPing()
 
 		if (MessageSent == true)
 		{
-			radio.openWritingPipe(MyAddress);
 			radio.stopListening();
+			radio.openWritingPipe(MyAddress);
 
 			Serial.println(" ");
 			Serial.print("Sending to ");
@@ -808,8 +810,8 @@ void FirstPing()
 
 		if (MessageSent == true)
 		{
-			radio.openWritingPipe(MyAddress);
 			radio.stopListening();
+			radio.openWritingPipe(MyAddress);
 
 			Serial.println(" ");
 			Serial.print("Sending to ");
