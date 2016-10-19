@@ -146,15 +146,15 @@ void setup()
 void loop()
 {
 	///////-VARIABLE DECLARATIONS-//////// 
-	
+
 	//Variables to hold this stations senser data
 	int MotionCount = 0;
 	float TemperatureCount = 0;
 
 
 	///////-VARIABLE DECLARATIONS-//////// 
-	
-	
+
+
 	digitalWrite(8, LOW);
 	int MathHolder = 0;
 	int counter = 0;
@@ -169,27 +169,34 @@ void loop()
 		//....Hope to add a clock in the future to help keep better timing
 		if (millis() > PastTime1 + CycleTime)
 		{
-
+			Serial.println("IN LOOP");//For Debuging ONLY
 			PIRisNotConected = false; //Set the error flag to false
 
 			//delay(200 + (1000 * (MyAddress - 9000)));
 
 			if (MyAddress != 9001)
 			{
+				Serial.println("ADD !1");//For Debuging ONLY
 
-				TemperatureCount = TemperatureCount / counter; //average the readings from the DHT
+				//TemperatureCount = TemperatureCount / counter; //average the readings from the DHT
 
+				Serial.println("ADD !1 LINE2");//For Debuging ONLY
+				goto line;
 				SendData(9001, MotionCount, TemperatureCount, "", 3); //send the data
-
+				line:
+			
+				Serial.println("ADD !1 LINE3");//For Debuging ONLY
+				
 				//Reset variables
 				TemperatureCount = 0;
 				MotionCount = 0;
 				counter = 0;
-
+				Serial.println("ADD !1 LINE4");//For Debuging ONLY
 			}
 
 			else if (MyAddress == 9001)
 			{
+				Serial.println("ADD =1");//For Debuging ONLY
 				TemperatureCount = TemperatureCount / counter; //average the readings from the DHT
 
 				Hub01Temperature = TemperatureCount;
@@ -226,6 +233,8 @@ void loop()
 		//Read data from the DHT sensor at timed intervals defiend by the ReadCycle variable
 		if (millis() > PastTime2 + READ_CYCLE)
 		{
+			Serial.println("IN TEMP");//For Debuging ONLY
+
 			MathHolder = dht.readTemperature(true);
 
 			TemperatureCount = TemperatureCount + MathHolder;
@@ -284,7 +293,7 @@ void loop()
 					Serial.println(Hub06Temperature); */
 			}
 		}
-
+		Serial.println("FLOATING");
 	}
 
 	Error(4);

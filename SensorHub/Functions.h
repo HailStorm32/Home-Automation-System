@@ -291,9 +291,11 @@ void Error(int errorCode, int Address = 0) //Function that will take an error nu
 
 void SendData(int ToAddress = 0, int Motion = 0, int Temperature = 0, String Command = "nul", int TypeOfData = 0)
 {
-	radio.stopListening();
-	radio.openWritingPipe(MyAddress);
-
+	Serial.println("IN FUNCTION");//For Debuging ONLY
+	//radio.stopListening();
+	Serial.println("IN FUNCTION 1");//For Debuging ONLY
+	//radio.openWritingPipe(MyAddress);
+	Serial.println("IN FUNCTION 2");//For Debuging ONLY
 	digitalWrite(8, HIGH);
 
 	//int data[3] = {}; //Have to create 4 arrays otherwise it will cause a weird bug...
@@ -488,9 +490,9 @@ void FirstPing()
 			Serial.print(Range[i]); //1
 			Serial.print(" ...");
 
-			while (!radio.available()) {}
+			//while (!radio.available()) {}
 
-			radio.read(&ReceivedMessage, sizeof(ReceivedMessage));
+			//radio.read(&ReceivedMessage, sizeof(ReceivedMessage));
 			Serial.println(" ");
 			Serial.print(ReceivedMessage);
 			MessageReceived = true;
