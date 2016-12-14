@@ -3,7 +3,7 @@
 //					This code by Demetrius Van Sickle is licensed under a						//
 //				Creative Commons Attribution-NonCommercial 4.0 International License.			//
 //																								//
-//	The nRF24L01 and DHT libries used in this code are licensed by their respective owners	//
+//	The nRF24L01 and DHT libries used in this code are licensed by their respective owners		//
 //					and are issued under the GNU General Public License version 2.				//
 //																							    //
 //**********************************************************************************************//
@@ -31,13 +31,17 @@ const byte ERROR_LED = 7;
 const byte PIR = 5;
 const byte DEBUG_LED = 8;
 
-#include "Functions.h"
+#include "Init_Functions.h"
 
-const int myAddress = setAddress();
-const int RANGE[5] = { giveRange(1, myAddress), giveRange(2, myAddress), giveRange(3, myAddress), giveRange(4, myAddress), giveRange(5, myAddress)};
+const int MY_ADDRESS = setAddress();
+const int RANGE[5] = { giveRange(1, MY_ADDRESS), giveRange(2, MY_ADDRESS), giveRange(3, MY_ADDRESS), giveRange(4, MY_ADDRESS), giveRange(5, MY_ADDRESS)};
+
+#include "MainFunctions.h"
+
+bool pingStatus = false;//debug only
 
 void setup()
-{
+{	
 	Serial.begin(9600);
 
 	//Startup radio and temperature sensors
@@ -55,14 +59,20 @@ void setup()
 
 	digitalWrite(DEBUG_LED, HIGH); //Show that we have entered the "setup" stage
 
+	pingStatus = startupPings();
 
-
+	digitalWrite(DEBUG_LED, LOW); //Show that we have exited the "setup" stage
 }
 
 void loop()
 {
+	
+	Serial.print("Ping status: ");
+	Serial.println(pingStatus);
+
+	Serial.println("/////////////////////");
 	Serial.print("My Address: ");
-	Serial.println(myAddress);
+	Serial.println(MY_ADDRESS);
 	Serial.println("Read Range:");
 	for (int i = 0; i <= 4; i++)
 	{
@@ -70,6 +80,6 @@ void loop()
 	}
 	while (true)
 	{
-
+		 
 	}
 }
