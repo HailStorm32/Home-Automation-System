@@ -31,17 +31,22 @@ const byte ERROR_LED = 7;
 const byte PIR = 5;
 const byte DEBUG_LED = 8;
 
+//Timer consts
+const int SEND_TIME = 10000; //Time it takes a hub to completly send a message
+const int BASE_CYCLE_TIME = 6000; //Time between data transmissions (in milliseconds) //Base time will be multiplied by each stations number so each hub will send data at different times 
+const int READ_CYCLE = 3500;  //Time between reading the temp sensor (in milliseconds)  1000 = 1sec
+
 #include "Init_Functions.h"
 
 const int MY_ADDRESS = setAddress();
-const int RANGE[5] = { giveRange(1, MY_ADDRESS), giveRange(2, MY_ADDRESS), giveRange(3, MY_ADDRESS), giveRange(4, MY_ADDRESS), giveRange(5, MY_ADDRESS)};
+const int RANGE[5] = { giveRange(1, MY_ADDRESS), giveRange(2, MY_ADDRESS), giveRange(3, MY_ADDRESS), giveRange(4, MY_ADDRESS), giveRange(5, MY_ADDRESS) };
 
 #include "MainFunctions.h"
 
 bool pingStatus = false;//debug only
 
 void setup()
-{	
+{
 	Serial.begin(9600);
 
 	//Startup radio and temperature sensors
@@ -62,11 +67,18 @@ void setup()
 	pingStatus = startupPings();
 
 	digitalWrite(DEBUG_LED, LOW); //Show that we have exited the "setup" stage
+
+	radio.setRetries(15, 15);
 }
 
 void loop()
 {
-	
+	//Setup a variable that will hold the temperature & motion of each hub
+	//There are a total of 8 (0-7) to hold data from each hub
+	int hubTemperature[8] = {};
+	int hubMotion[8] = {};
+	int cycleTime = (SEND_TIME + (BASE_CYCLE_TIME * (MY_ADDRESS - 9000)));//Time between data transmissions
+
 	Serial.print("Ping status: ");
 	Serial.println(pingStatus);
 
@@ -78,8 +90,54 @@ void loop()
 	{
 		Serial.println(RANGE[i]);
 	}
+
+	radio.openReadingPipe(0, RANGE[0]);
+	radio.openReadingPipe(1, RANGE[1]);
+	radio.openReadingPipe(2, RANGE[2]);
+	radio.openReadingPipe(3, RANGE[3]);
+	radio.openReadingPipe(4, RANGE[4]);
+	radio.openReadingPipe(5, RANGE[5]);
+
+	radio.startListening();
+
+	///////////////////////Begin "Main Code"\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+	
+	int MotionCount = 0;
+	float TemperatureCount = 0;
+
+
+	///////-VARIABLE DECLARATIONS-//////// 
+	int MathHolder = 0;
+	int counter = 0;
+	bool PIRisNotConected = true;
+	int PastTime1 = millis();
+	int PastTime2 = PastTime1;
+
+	delay(10000);
+	dataSend(9001, 'T', 66, 5, "nul");
+
 	while (true)
 	{
-		 
+		if (radio.available())
+		{
+			receiveData(hubTemperature, hubMotion);
+
+			if (MY_ADDRESS == 9001)
+			{
+				Serial.println("Temperature Data: ");
+				for (int i = 0; i < 8; i++)
+				{
+					Serial.println(hubTemperature[i]);
+				}
+
+				Serial.println("--------------------");
+
+				Serial.println("Motion Data: ");
+				for (int i = 0; i < 8; i++)
+				{
+					Serial.println(hubMotion[i]);
+				}
+			}
+		}
 	}
 }
