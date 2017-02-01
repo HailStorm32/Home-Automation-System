@@ -3,7 +3,7 @@
 //					This code by Demetrius Van Sickle is licensed under a						//
 //				Creative Commons Attribution-NonCommercial 4.0 International License.			//
 //																								//
-//	The nRF24L01 and DHT libries used in this code are licensed by their respective owners	//
+//	The nRF24L01 and DHT libries used in this code are licensed by their respective owners		//
 //					and are issued under the GNU General Public License version 2.				//
 //																							    //
 //**********************************************************************************************//
@@ -13,19 +13,15 @@
 #include <RF24.h>
 #include <DHT.h>
 
-#define DHTPIN 6     // Define what digital pin the temp sensor is connected to
 
+#define DHTPIN 6     // Define what digital pin the temp sensor is connected to
 #define DHTTYPE DHT11  //Define the type of temp sensor we are useing
 
-RF24 radio(9, 10);
+RF24 radio(9, 10); //Set what pins the radio are in
 
 DHT dht(DHTPIN, DHTTYPE); // Initialize temp sensor
 
-//Set the addresses for all stations
-const int STATION[8] = { 9001, 9002, 9003, 9004, 9005, 9006, 9007, 9008 };
-
-int *Range = new int[5];
-
+const int STATION[8] = { 9001, 9002, 9003, 9004, 9005, 9006, 9007, 9008 }; //Set the addresses for all stations
 
 //Set Arduino pins
 const byte SWITCH_IN_1 = 2;
@@ -33,260 +29,122 @@ const byte SWITCH_IN_2 = 3;
 const byte SWITCH_IN_3 = 4;
 const byte ERROR_LED = 7;
 const byte PIR = 5;
+const byte DEBUG_LED = 8;
 
-int MyAddress = 9999; //Set up station's personal address. Set to 9999 to catch errors
-
-//Setup variables that will hold time data
-unsigned long PastTime1 = 0;
-unsigned long PastTime2 = 0;
-
+//Timer consts
 const int SEND_TIME = 10000; //Time it takes a hub to completly send a message
 const int BASE_CYCLE_TIME = 6000; //Time between data transmissions (in milliseconds) //Base time will be multiplied by each stations number so each hub will send data at different times 
 const int READ_CYCLE = 3500;  //Time between reading the temp sensor (in milliseconds)  1000 = 1sec
-int CycleTime = 0;  //Time between data transmissions
 
+#include "Init_Functions.h"
 
-//Value holders VV ///
+const int MY_ADDRESS = setAddress();
+const int RANGE[5] = { giveRange(1, MY_ADDRESS), giveRange(2, MY_ADDRESS), giveRange(3, MY_ADDRESS), giveRange(4, MY_ADDRESS), giveRange(5, MY_ADDRESS) };
 
-//Setup a variable that will hold the temperature
-//There are a total of 8 to hold data from each hub
-int Hub01Temperature = 0;
-int Hub02Temperature = 0;
-int Hub03Temperature = 0;
-int Hub04Temperature = 0;
-int Hub05Temperature = 0;
-int Hub06Temperature = 0;
-int Hub07Temperature = 0;
-int Hub08Temperature = 0;
+#include "MainFunctions.h"
 
-//Setup a variable that will hold the humidity
-//There are a total of 8 to hold data from each hub
-/*int humidity_01 = 0;
-int humidity_02 = 0;
-int humidity_03 = 0;
-int humidity_04 = 0;      //TO BE ADDED IN LATER
-int humidity_05 = 0;
-int humidity_06 = 0;
-int humidity_07 = 0;
-int humidity_08 = 0;  */
-
-//Setup a variable that will hold the number of times the PIR sensor was activated
-//There are a total of 8 to hold data from each hub
-int Hub01Motion = 0;
-int Hub02Motion = 0;
-int Hub03Motion = 0;
-int Hub04Motion = 0;
-int Hub05Motion = 0;
-int Hub06Motion = 0;
-int Hub07Motion = 0;
-int Hub08Motion = 0;
-
-
-
-#include "Functions.h"
+bool pingStatus = false;//debug only
+int debug = -1;
+int data2 = -1;
 
 void setup()
 {
 	Serial.begin(9600);
 
+	//Startup radio and temperature sensors
 	radio.begin();
 	delay(200);
 	dht.begin();
 
-	//Setup pins
+	//Set pin modes
 	pinMode(SWITCH_IN_1, INPUT);
 	pinMode(SWITCH_IN_2, INPUT);
 	pinMode(SWITCH_IN_3, INPUT);
 	pinMode(PIR, INPUT);
 	pinMode(ERROR_LED, OUTPUT);
-	pinMode(8, OUTPUT);
+	pinMode(DEBUG_LED, OUTPUT);
 
-	digitalWrite(8, HIGH);
+	digitalWrite(DEBUG_LED, HIGH); //Show that we have entered the "setup" stage
 
-	SetAddress();
+	pingStatus = startupPings();
 
-	//Make sure station address was set correctly
-	if (MyAddress <= 9008 && MyAddress > 9000) //If the variable for this station's address is still the default value, give an error
-	{
-		Serial.println("Address is: ");
-		Serial.println(MyAddress);  //Print the hub's address
-	}
-	else
-	{
-		Error(1);
-	}
+	digitalWrite(DEBUG_LED, LOW); //Show that we have exited the "setup" stage
 
-	SetReadRange(); //Set which stations this current station can receive from based on its address
+	//radio.setRetries(15, 15);
 
-	//radio.openReadingPipe(0, Range[0]);
-	radio.openReadingPipe(1, Range[0]);
-	radio.openReadingPipe(2, Range[1]);
-	radio.openReadingPipe(3, Range[2]);
-	radio.openReadingPipe(4, Range[3]);
-	radio.openWritingPipe(MyAddress);
 
-	radio.startListening();
-
-	delay(1000); //Delay to allow for buffer time
-
-	FirstPing();//Have the master station ping all other stations 
-
-	//Set the reading pipes
-	/*radio.openReadingPipe(0, Range[0]);
-	radio.openReadingPipe(1, Range[1]);
-	radio.openReadingPipe(2, Range[2]);
-	radio.openReadingPipe(3, Range[3]);
-	radio.openReadingPipe(4, Range[4]);
-	//radio.openReadingPipe(5, Range[5]);*/
+	//radio.openReadingPipe(0, 9001);
+	//radio.openReadingPipe(1, RANGE[1]);
+	//radio.openReadingPipe(2, RANGE[2]);
+	//radio.openReadingPipe(3, RANGE[3]);
+	//radio.openReadingPipe(4, RANGE[4]);
+	//radio.openReadingPipe(5, RANGE[5]);
 
 	//radio.startListening();
 
+
+	///Debug StuffVVV
+	Serial.print("Ping status: ");
+	Serial.println(pingStatus);
+
+	Serial.println("/////////////////////");
+	Serial.print("My Address: ");
+	Serial.println(MY_ADDRESS);
+	Serial.println("Read Range:");
+	for (int i = 0; i <= 4; i++)
+	{
+		Serial.println(RANGE[i]);
+	}
 }
 
 void loop()
 {
-	///////-VARIABLE DECLARATIONS-//////// 
-	
-	//Variables to hold this stations senser data
-	int MotionCount = 0;
-	float TemperatureCount = 0;
 
 
-	///////-VARIABLE DECLARATIONS-//////// 
-	
-	
-	digitalWrite(8, LOW);
-	int MathHolder = 0;
-	int counter = 0;
-	bool PIRisNotConected = true;
-	PastTime1 = millis();
-	PastTime2 = PastTime1;
-
-	while (true)
+	if (MY_ADDRESS == 9001)
 	{
 
-		//Send the data to the master hub(or closest hub) at timed intervals defined by the CycleTime variable
-		//....Hope to add a clock in the future to help keep better timing
-		if (millis() > PastTime1 + CycleTime)
-		{
+		//waitForData(5000);
 
-			PIRisNotConected = false; //Set the error flag to false
+		dataReceive(debug);
 
-			//delay(200 + (1000 * (MyAddress - 9000)));
-
-			if (MyAddress != 9001)
-			{
-
-				TemperatureCount = TemperatureCount / counter; //average the readings from the DHT
-
-				SendData(9001, MotionCount, TemperatureCount, "", 3); //send the data
-
-				//Reset variables
-				TemperatureCount = 0;
-				MotionCount = 0;
-				counter = 0;
-
-			}
-
-			else if (MyAddress == 9001)
-			{
-				TemperatureCount = TemperatureCount / counter; //average the readings from the DHT
-
-				Hub01Temperature = TemperatureCount;
-				Hub01Motion = MotionCount;
-
-				TemperatureCount = 0;
-				MotionCount = 0;
-
-			}
-
-
-			//Reset the timer
-			PastTime1 = millis();
-		}
-
-
-		//See if there is motion in the room and record it
-		if (digitalRead(PIR) == HIGH)
-		{
-
-			if (PIRisNotConected == true)//Check to see if PIR sensor is conected
-			{
-				//Error(2);  //UNCOMMENT AFTER DEBUG!!!
-			}
-
-			delay(2500); //Because the sensor ouputs a long HIGH for a single trigger, the delay is to prevent spammed adding (hope to be fixed soon)
-
-			Serial.println("MOTION");//For Debuging ONLY
-
-			MotionCount = MotionCount + 1; //Add on to the # of motion captures 
-		}
-
-
-		//Read data from the DHT sensor at timed intervals defiend by the ReadCycle variable
-		if (millis() > PastTime2 + READ_CYCLE)
-		{
-			MathHolder = dht.readTemperature(true);
-
-			TemperatureCount = TemperatureCount + MathHolder;
-
-			if (isnan(MathHolder))
-			{
-				Error(6);
-			}
-
-			counter++;
-
-			PastTime2 = millis();
-		}
-
-		//See if there are any incoming messages  
-
-		if (radio.available())
-		{
-
-			DataReceive();
-
-			if (MyAddress == 9001)
-			{
-
-				Serial.println("  ");
-				Serial.print("9001 -- Motion: ");
-				Serial.println(Hub01Motion);
-				Serial.print("9001 -- Temperature: ");
-				Serial.println(Hub01Temperature);
-
-				Serial.println("  ");
-				Serial.print("9002 -- Motion: ");
-				Serial.println(Hub02Motion);
-				Serial.print("9002 -- Temperature: ");
-				Serial.println(Hub02Temperature);
-
-				Serial.println("  ");
-				Serial.print("9003 -- Motion: ");
-				Serial.println(Hub03Motion);
-				Serial.print("9003 -- Temperature: ");
-				Serial.println(Hub03Temperature);
-
-				/*	Serial.print("9004 -- Motion: ");
-					Serial.println(Hub04Motion);
-					Serial.print("9004 -- Temperature: ");
-					Serial.println(Hub04Temperature);
-
-					Serial.print("9005 -- Motion: ");
-					Serial.println(Hub05Motion);
-					Serial.print("9005 -- Temperature: ");
-					Serial.println(Hub05Temperature);
-
-					Serial.print("9006 -- Motion: ");
-					Serial.println(Hub06Motion);
-					Serial.print("9006 -- Temperature: ");
-					Serial.println(Hub06Temperature); */
-			}
-		}
-
+		Serial.println(debug);
+		debug = -10;
 	}
 
-	Error(4);
+	//For debug VVV
+	if (MY_ADDRESS == 9003)
+	{
+		
+		//dataSend(4508, 9002);
+
+		
+		/*Serial.println("Bricked");
+		while (true) {}
+		Serial.println("NOT Bricked");*/
+	}//^^^
+
+
+	if (MY_ADDRESS == 9002)
+	{
+
+		//radio.openWritingPipe(9001);
+		//radio.stopListening();
+
+		data2 = 2550;
+
+		dataSend(data2, 9001);
+
+		/*if (radio.write(&data, sizeof(data)))
+		{
+			Serial.println("true");
+		}
+		else
+		{
+			//Serial.println("Sending to address");
+			errorReport(3, 9001);
+		}*/
+	}
+
 
 }
