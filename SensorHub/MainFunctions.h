@@ -396,6 +396,7 @@ bool startupPings()
 //
 // Arguments:
 //		waitTime -- time to wait (in msec) before calling it
+//					value < 0 -- infinite wait time
 // Return Values:
 //		True -- there was data to read with in the specified time
 //		False -- there was NO data to read with in the specified time
@@ -404,12 +405,19 @@ bool waitForData(int waitTime)
 {
 	int targetTime = 0;
 
-	targetTime = millis() + waitTime;
-	while (!radio.available() && millis() < targetTime) {}
-
-	if (millis() > targetTime)
+	if (waitTime >= 0)
 	{
-		errorReport(10);
+		targetTime = millis() + waitTime;
+		while (!radio.available() && millis() < targetTime) {}
+
+		if (millis() > targetTime)
+		{
+			errorReport(10);
+		}
+	}
+	else
+	{
+		while (!radio.available() && millis() < targetTime) {}
 	}
 
 }
@@ -501,208 +509,56 @@ void logMotion(int data, int hubMotion[], int fromAddress)
 
 //=========================================================================
 // Function: dataSend
-// Description: Will send data (temperature, motion, or ping data) to specified hub
+// Description: Will send data to specified hub
 //
 // Arguments:
 //		toAddress (I) -- what address we want to send to
-//		typeOfData (I) -- T=temp M=motion B=both C=command
-//		temperature (I) -- temperature sensor data (if none, set to '0')
-//		motion (I) -- motion sensor data (if none, set to '0')
-//		command (I) -- string command (if none, set to "nul")
+//		data (I) -- data to send
 // Return Values:
 //		NONE
 //=========================================================================
-void dataSend(int toAddress, char typeOfData, int temperature, int motion, String command)
+void dataSend(int data, int toAddress = 0)
 {
-	radio.stopListening();
-	radio.openWritingPipe(toAddress);
 	digitalWrite(DEBUG_LED, HIGH);
-	////////////////////////// Send the address it wants to send to /////////////////////
-	
-	radio.write(&toAddress, sizeof(toAddress));
-	
-	//while (radio.write(&toAddress, sizeof(toAddress)) != true) {};
-	//if (radio.write(&toAddress, sizeof(toAddress)) == false)
-	//{
-		Serial.println("Sending to address");
-		errorReport(3, toAddress);
-	//}
 
-	delay(500);
+	radio.openWritingPipe(9001);
+	radio.stopListening();
 
-	///////////////////////// Send my address //////////////////////////////////////////
-	if (radio.write(&MY_ADDRESS, sizeof(MY_ADDRESS)) == false)
+	if (radio.write(&data, sizeof(data)))
 	{
-		Serial.println("Sending myaddress");
-		errorReport(3, toAddress);
+		Serial.println("true");
+	}
+	else
+	{
+		//Serial.println("Sending to address");
+		errorReport(3, 9001);
 	}
 
-	delay(500);
-
-	/////////// Tell the receiver what type of data we are sending /////////////////////
-	if (radio.write(&typeOfData, sizeof(typeOfData)) == false)
-	{
-		Serial.println("Sending type of data");
-		errorReport(3, toAddress);
-	}
-
-	delay(500);
-
-	//////////////////////// Send the data ////////////////////////////////////////////
-	switch (typeOfData)
-	{
-	case 'T':
-		if (radio.write(&temperature, sizeof(temperature)) == false)
-		{
-			Serial.println("Sending temperature data");
-			errorReport(3, toAddress);
-		}
-		break;
-	case 'M':
-		if (radio.write(&motion, sizeof(motion)) == false)
-		{
-			Serial.println("Sending motion data");
-			errorReport(3, toAddress);
-		}
-		break;
-	case 'B':
-		if (radio.write(&temperature, sizeof(temperature)) == false)
-		{
-			Serial.println("Sending temperature data");
-			errorReport(3, toAddress);
-		}
-
-		delay(500);
-
-		if (radio.write(&motion, sizeof(motion)) == false)
-		{
-			Serial.println("Sending motion data");
-			errorReport(3, toAddress);
-		}
-		break;
-	case 'C':
-		if (radio.write(&command, sizeof(command)) == false)
-		{
-			Serial.println("Sending command data");
-			errorReport(3, toAddress);
-		}
-		break;
-	}
 	digitalWrite(DEBUG_LED, LOW);
-
 }
 
 
 //=========================================================================
 // Function: receiveData
-// Description: Will receive data (temperature, motion, or ping data) from hub
+// Description: Will receive data from hub
 //
 // Arguments:
-//		hubTemperature[] (O) -- array of each hub's temperature data
-//		hubMotion[] (O) -- array of each hub's motion data
+//		data (O) -- holds incoming data
 // Return Values:
-//		NONE
+//		address -- target address
 //=========================================================================
-void receiveData(int hubTemperature[], int hubMotion[])
+int dataReceive(int &data)
 {
-	int fromAddress = 0;
-	int toAddress = 0;
-	int integerData = 0;
-	bool receiveCommand = false;
-	char typeOfData = ' ';
-	String stringMessage = "";
+	int address = 0;
 
-	/////Open all in-range pipes because we dont know who we will recieve from
-	/*radio.openReadingPipe(0, RANGE[0]);
-	radio.openReadingPipe(1, RANGE[1]);
-	radio.openReadingPipe(2, RANGE[2]);
-	radio.openReadingPipe(3, RANGE[3]);
-	radio.openReadingPipe(4, RANGE[4]);
-	radio.openReadingPipe(5, RANGE[5]);
+	radio.openReadingPipe(0, MY_ADDRESS); //must be set to receiver's address. Will only receive data from hubs that have opened writing pipes to this address
+	radio.startListening();
 
-	radio.startListening();*/
+	waitForData(5000);
 
-	////////////////////////// Get the "to address" //////////////////////////////////
-	waitForData(2000);
+	radio.read(&data, sizeof(data));
 
-	radio.read(&fromAddress, sizeof(fromAddress));
+	//address
 
-	////////////////////////////// Get the address of the sender ///////////////////////
-	waitForData(2000);
-
-	radio.read(&fromAddress, sizeof(fromAddress));
-
-	///////////////////////////////// Get the data type ////////////////////////////////
-	waitForData(2000);
-
-	radio.read(&typeOfData, sizeof(typeOfData));
-
-	//////////////////////////////// Get the data //////////////////////////////////////
-	if (MY_ADDRESS == toAddress)
-	{
-		switch (typeOfData)
-		{
-		case 'T':
-			waitForData(2000);
-
-			Serial.println("Receiving Data..."); //debug only
-			radio.read(&integerData, sizeof(integerData));
-
-			logTemperature(integerData, hubTemperature, fromAddress);
-			integerData = 0;
-			break;
-
-		case 'M':
-			waitForData(2000);
-
-			Serial.println("Receiving Data..."); //debug only
-			radio.read(&integerData, sizeof(integerData));
-
-			logMotion(integerData, hubMotion, fromAddress);
-			integerData = 0;
-			break;
-
-		case 'B':
-			waitForData(2000);
-
-			Serial.println("Receiving 1st Data..."); //debug only
-			radio.read(&integerData, sizeof(integerData));
-
-			logTemperature(integerData, hubTemperature, fromAddress);
-			integerData = 0;
-
-			waitForData(2000);
-
-			Serial.println("Receiving 2nd Data..."); //debug only
-			radio.read(&integerData, sizeof(integerData));
-
-			logMotion(integerData, hubMotion, fromAddress);
-			integerData = 0;
-			break;
-
-		case 'C':
-			waitForData(2000);
-
-			Serial.println("Receiving Data..."); //debug only
-			radio.read(&stringMessage, sizeof(stringMessage));
-
-			break;
-
-		default:
-			errorReport(5, fromAddress);
-			break;
-		}
-	}
-
-	if (toAddress != MY_ADDRESS)
-	{
-		//TO-DO: forward message on
-	}
-	else
-	{
-		if (receiveCommand == true)
-		{
-			//TO-DO: create function to execute command
-		}
-	}
+	return 1;
 }

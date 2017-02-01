@@ -44,6 +44,8 @@ const int RANGE[5] = { giveRange(1, MY_ADDRESS), giveRange(2, MY_ADDRESS), giveR
 #include "MainFunctions.h"
 
 bool pingStatus = false;//debug only
+int debug = -1;
+int data2 = -1;
 
 void setup()
 {
@@ -68,17 +70,20 @@ void setup()
 
 	digitalWrite(DEBUG_LED, LOW); //Show that we have exited the "setup" stage
 
-	radio.setRetries(15, 15);
-}
+	//radio.setRetries(15, 15);
 
-void loop()
-{
-	//Setup a variable that will hold the temperature & motion of each hub
-	//There are a total of 8 (0-7) to hold data from each hub
-	int hubTemperature[8] = {};
-	int hubMotion[8] = {};
-	int cycleTime = (SEND_TIME + (BASE_CYCLE_TIME * (MY_ADDRESS - 9000)));//Time between data transmissions
 
+	//radio.openReadingPipe(0, 9001);
+	//radio.openReadingPipe(1, RANGE[1]);
+	//radio.openReadingPipe(2, RANGE[2]);
+	//radio.openReadingPipe(3, RANGE[3]);
+	//radio.openReadingPipe(4, RANGE[4]);
+	//radio.openReadingPipe(5, RANGE[5]);
+
+	//radio.startListening();
+
+
+	///Debug StuffVVV
 	Serial.print("Ping status: ");
 	Serial.println(pingStatus);
 
@@ -90,54 +95,56 @@ void loop()
 	{
 		Serial.println(RANGE[i]);
 	}
+}
 
-	radio.openReadingPipe(0, RANGE[0]);
-	radio.openReadingPipe(1, RANGE[1]);
-	radio.openReadingPipe(2, RANGE[2]);
-	radio.openReadingPipe(3, RANGE[3]);
-	radio.openReadingPipe(4, RANGE[4]);
-	radio.openReadingPipe(5, RANGE[5]);
-
-	radio.startListening();
-
-	///////////////////////Begin "Main Code"\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
-	
-	int MotionCount = 0;
-	float TemperatureCount = 0;
+void loop()
+{
 
 
-	///////-VARIABLE DECLARATIONS-//////// 
-	int MathHolder = 0;
-	int counter = 0;
-	bool PIRisNotConected = true;
-	int PastTime1 = millis();
-	int PastTime2 = PastTime1;
-
-	delay(10000);
-	dataSend(9001, 'T', 66, 5, "nul");
-
-	while (true)
+	if (MY_ADDRESS == 9001)
 	{
-		if (radio.available())
-		{
-			receiveData(hubTemperature, hubMotion);
 
-			if (MY_ADDRESS == 9001)
-			{
-				Serial.println("Temperature Data: ");
-				for (int i = 0; i < 8; i++)
-				{
-					Serial.println(hubTemperature[i]);
-				}
+		//waitForData(5000);
 
-				Serial.println("--------------------");
+		dataReceive(debug);
 
-				Serial.println("Motion Data: ");
-				for (int i = 0; i < 8; i++)
-				{
-					Serial.println(hubMotion[i]);
-				}
-			}
-		}
+		Serial.println(debug);
+		debug = -10;
 	}
+
+	//For debug VVV
+	if (MY_ADDRESS == 9003)
+	{
+		
+		//dataSend(4508, 9002);
+
+		
+		/*Serial.println("Bricked");
+		while (true) {}
+		Serial.println("NOT Bricked");*/
+	}//^^^
+
+
+	if (MY_ADDRESS == 9002)
+	{
+
+		//radio.openWritingPipe(9001);
+		//radio.stopListening();
+
+		data2 = 2550;
+
+		dataSend(data2, 9001);
+
+		/*if (radio.write(&data, sizeof(data)))
+		{
+			Serial.println("true");
+		}
+		else
+		{
+			//Serial.println("Sending to address");
+			errorReport(3, 9001);
+		}*/
+	}
+
+
 }
