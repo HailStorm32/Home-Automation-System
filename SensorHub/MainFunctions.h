@@ -401,7 +401,7 @@ bool startupPings()
 //		True -- there was data to read with in the specified time
 //		False -- there was NO data to read with in the specified time
 //=========================================================================
-bool waitForData(int waitTime)
+/*bool waitForData(int waitTime)
 {
 	int targetTime = 0;
 
@@ -417,10 +417,10 @@ bool waitForData(int waitTime)
 	}
 	else
 	{
-		while (!radio.available() && millis() < targetTime) {}
+		while (!radio.available()) {}
 	}
 
-}
+}*/
 
 //=========================================================================
 // Function: logTemperature
@@ -433,7 +433,7 @@ bool waitForData(int waitTime)
 // Return Values: 
 //		NONE
 //=========================================================================
-void logTemperature(int data, int hubTemperature[], int fromAddress)
+/*void logTemperature(int data, int hubTemperature[], int fromAddress)
 {
 	switch (fromAddress)
 	{
@@ -462,7 +462,7 @@ void logTemperature(int data, int hubTemperature[], int fromAddress)
 		hubTemperature[7] = data;
 		break;
 	}
-}
+}*/
 
 
 //=========================================================================
@@ -476,7 +476,7 @@ void logTemperature(int data, int hubTemperature[], int fromAddress)
 // Return Values: 
 //		NONE
 //=========================================================================
-void logMotion(int data, int hubMotion[], int fromAddress)
+/*void logMotion(int data, int hubMotion[], int fromAddress)
 {
 	switch (fromAddress)
 	{
@@ -505,26 +505,28 @@ void logMotion(int data, int hubMotion[], int fromAddress)
 		hubMotion[7] = data;
 		break;
 	}
-}
+}*/
 
 //=========================================================================
 // Function: dataSend
-// Description: Will send data to specified hub
+// Description: Will send data to specified hub via the writing pipe of the
+//				specified hub
 //
 // Arguments:
 //		toAddress (I) -- what address we want to send to
+//						 Default = 9001 
 //		data (I) -- data to send
 // Return Values:
 //		NONE
 //=========================================================================
-void dataSend(int data, int toAddress = 0)
+/*void dataSend(char data[], int toAddress = 9001)
 {
 	digitalWrite(DEBUG_LED, HIGH);
 
-	radio.openWritingPipe(9001);
+	radio.openWritingPipe(toAddress);
 	radio.stopListening();
 
-	if (radio.write(&data, sizeof(data)))
+	if (radio.write(data, MESSAGE_SIZE))
 	{
 		Serial.println("true");
 	}
@@ -535,30 +537,32 @@ void dataSend(int data, int toAddress = 0)
 	}
 
 	digitalWrite(DEBUG_LED, LOW);
-}
+}*/
 
 
 //=========================================================================
 // Function: receiveData
 // Description: Will receive data from hub
+//				Will only receive data from hubs that have opened writing pipes 
+//				to this address (MY_ADDRESS)
 //
 // Arguments:
 //		data (O) -- holds incoming data
 // Return Values:
-//		address -- target address
+//		dataaddress -- target address
 //=========================================================================
-int dataReceive(int &data)
+/*int dataReceive(char data[])
 {
 	int address = 0;
 
 	radio.openReadingPipe(0, MY_ADDRESS); //must be set to receiver's address. Will only receive data from hubs that have opened writing pipes to this address
 	radio.startListening();
 
-	waitForData(5000);
+	waitForData(-1);
+	Serial.println(sizeof(data));
+	radio.read(data, MESSAGE_SIZE);
 
-	radio.read(&data, sizeof(data));
-
-	//address
+	
 
 	return 1;
-}
+}*/

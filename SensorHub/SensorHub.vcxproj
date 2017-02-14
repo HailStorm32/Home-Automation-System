@@ -74,8 +74,8 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>C:\Users\Demetri Van Sickle\AppData\Local\arduino15\packages\arduino\hardware\avr\1.6.15\libraries\SPI\src;C:\Users\Demetri Van Sickle\Documents\Arduino\libraries\RF24;C:\Users\Demetri Van Sickle\Documents\Arduino\libraries\DHT_sensor_library;C:\Users\Demetri Van Sickle\Documents\Arduino\libraries\DHT_sensor_library\utility;C:\Users\Demetri Van Sickle\Documents\Arduino\libraries\RF24\utility;C:\Users\Demetri Van Sickle\AppData\Local\arduino15\packages\arduino\hardware\avr\1.6.15\libraries\SPI\src\utility;D:\Program Files (x86)\Arduino\libraries;C:\Users\Demetri Van Sickle\AppData\Local\arduino15\packages\arduino\hardware\avr\1.6.15\libraries;C:\Users\Demetri Van Sickle\Documents\Arduino\libraries;C:\Users\Demetri Van Sickle\AppData\Local\arduino15\packages\arduino\hardware\avr\1.6.15\cores\arduino;C:\Users\Demetri Van Sickle\AppData\Local\arduino15\packages\arduino\hardware\avr\1.6.15\variants\eightanaloginputs;D:\Demetri Van Sickle\Documents\GitHub\Home-Automation-System\SensorHub;C:\Users\Demetri Van Sickle\AppData\Local\arduino15\packages\arduino\hardware\avr\1.6.15\cores\arduino;C:\Users\Demetri Van Sickle\AppData\Local\arduino15\packages\arduino\hardware\avr\1.6.15\variants\eightanaloginputs;C:\Users\Demetri Van Sickle\AppData\Local\arduino15\packages\arduino\hardware\avr\1.6.15\libraries\SPI\src;C:\Users\Demetri Van Sickle\Documents\Arduino\libraries\RF24;C:\Users\Demetri Van Sickle\Documents\Arduino\libraries\DHT_sensor_library;D:\Program Files (x86)\Arduino\libraries;C:\Users\Demetri Van Sickle\AppData\Local\arduino15\packages\arduino\hardware\avr\1.6.15\libraries;D:\Program Files (x86)\Microsoft Visual Studio 14.0\Common7\IDE\Extensions\wgxpumi3.gmm\Micro Platforms\default\debuggers;C:\Users\Demetri Van Sickle\Documents\Arduino\libraries;C:\Users\Demetri Van Sickle\Documents\Arduino\libraries\RF24\utility;C:\Users\Demetri Van Sickle\AppData\Local\arduino15\packages\arduino\tools\avr-gcc\4.9.2-atmel3.5.3-arduino2/avr/include/;C:\Users\Demetri Van Sickle\AppData\Local\arduino15\packages\arduino\tools\avr-gcc\4.9.2-atmel3.5.3-arduino2//avr/include/avr/;C:\Users\Demetri Van Sickle\AppData\Local\arduino15\packages\arduino\tools\avr-gcc\4.9.2-atmel3.5.3-arduino2/lib\gcc\avr\4.8.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <ForcedIncludeFiles>D:\Demetri Van Sickle\Documents\GitHub\Home-Automation-System\SensorHub\__vm\.SensorHub.vsarduino.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <AdditionalIncludeDirectories>C:\Users\Demetri Van Sickle\Documents\Arduino\libraries\DHT_sensor_library;C:\Users\Demetri Van Sickle\Documents\Arduino\libraries\RF24;C:\Users\Demetri Van Sickle\Documents\Arduino\libraries\RF24\utility;C:\Users\Demetri Van Sickle\AppData\Local\arduino15\packages\arduino\hardware\avr\1.6.15\libraries\SPI\src;$(ProjectDir)..\..\..\..\..\Program Files (x86)\Arduino\libraries;C:\Users\Demetri Van Sickle\AppData\Local\arduino15\packages\arduino\hardware\avr\1.6.15\libraries;C:\Users\Demetri Van Sickle\Documents\Arduino\libraries;C:\Users\Demetri Van Sickle\AppData\Local\arduino15\packages\arduino\hardware\avr\1.6.15\cores\arduino;C:\Users\Demetri Van Sickle\AppData\Local\arduino15\packages\arduino\hardware\avr\1.6.15\variants\eightanaloginputs;$(ProjectDir)..\SensorHub;C:\Users\Demetri Van Sickle\AppData\Local\arduino15\packages\arduino\tools\avr-gcc\4.9.2-atmel3.5.3-arduino2\avr\include\;C:\Users\Demetri Van Sickle\AppData\Local\arduino15\packages\arduino\tools\avr-gcc\4.9.2-atmel3.5.3-arduino2\avr\include\avr\;C:\Users\Demetri Van Sickle\AppData\Local\arduino15\packages\arduino\tools\avr-gcc\4.9.2-atmel3.5.3-arduino2\lib\gcc\avr\4.9.2\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <ForcedIncludeFiles>$(ProjectDir)__vm\.SensorHub.vsarduino.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
       <PreprocessorDefinitions>__AVR_ATmega328p__;__AVR_ATmega328P__;F_CPU=16000000L;ARDUINO=106012;ARDUINO_AVR_NANO;ARDUINO_ARCH_AVR;__cplusplus=201103L;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
   </ItemDefinitionGroup>
@@ -119,9 +119,15 @@
     </None>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="hub.h" />
     <ClInclude Include="Init_Functions.h" />
     <ClInclude Include="MainFunctions.h" />
+    <ClInclude Include="radio.h" />
     <ClInclude Include="__vm\.SensorHub.vsarduino.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="hub.cpp" />
+    <ClCompile Include="radio.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

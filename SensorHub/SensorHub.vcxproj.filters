@@ -27,5 +27,19 @@
     <ClInclude Include="Init_Functions.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="hub.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="radio.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="hub.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="radio.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

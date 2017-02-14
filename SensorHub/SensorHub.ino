@@ -12,6 +12,8 @@
 #include "nRF24L01.h"
 #include <RF24.h>
 #include <DHT.h>
+#include "hub.h"
+#include "radio.h"
 
 
 #define DHTPIN 6     // Define what digital pin the temp sensor is connected to
@@ -40,12 +42,23 @@ const int READ_CYCLE = 3500;  //Time between reading the temp sensor (in millise
 
 const int MY_ADDRESS = setAddress();
 const int RANGE[5] = { giveRange(1, MY_ADDRESS), giveRange(2, MY_ADDRESS), giveRange(3, MY_ADDRESS), giveRange(4, MY_ADDRESS), giveRange(5, MY_ADDRESS) };
+//const int MESSAGE_SIZE = 12;
 
 #include "MainFunctions.h"
 
+
+Radio data(MY_ADDRESS);
+
 bool pingStatus = false;//debug only
-int debug = -1;
-int data2 = -1;
+//char debug[MESSAGE_SIZE];
+//  char data2[] = "cat32";*/
+
+char codedMessage2[MESSAGE_SIZE] = "";
+float temp = 0;
+int motion = 0;
+int fromAdd = 0;
+
+Hub hub1; 
 
 void setup()
 {
@@ -82,7 +95,6 @@ void setup()
 
 	//radio.startListening();
 
-
 	///Debug StuffVVV
 	Serial.print("Ping status: ");
 	Serial.println(pingStatus);
@@ -99,51 +111,47 @@ void setup()
 
 void loop()
 {
+	
+	data.encodeMessage(74.6, 564, 9001); //, codedMessage2);
 
+	Serial.println("VVVV");
+	Serial.println(codedMessage2);
+	Serial.println("___________________");
+
+	data.decodeMessage(temp, motion, fromAdd);
+
+	Serial.println(temp);
+	Serial.println(motion);
+	Serial.println(fromAdd);
+
+	while (true)
+	{
+
+	}
 
 	if (MY_ADDRESS == 9001)
 	{
+		///dataReceive(debug);
 
-		//waitForData(5000);
-
-		dataReceive(debug);
-
-		Serial.println(debug);
-		debug = -10;
+		//Serial.println(debug);
+		Serial.println("----------");
 	}
 
 	//For debug VVV
 	if (MY_ADDRESS == 9003)
 	{
-		
-		//dataSend(4508, 9002);
+		//delay(2500);
+		//dataSend(data, 9001);
 
-		
-		/*Serial.println("Bricked");
-		while (true) {}
-		Serial.println("NOT Bricked");*/
 	}//^^^
 
 
 	if (MY_ADDRESS == 9002)
 	{
+		//delay(2000);
 
-		//radio.openWritingPipe(9001);
-		//radio.stopListening();
+		//dataSend(data2, 9001);
 
-		data2 = 2550;
-
-		dataSend(data2, 9001);
-
-		/*if (radio.write(&data, sizeof(data)))
-		{
-			Serial.println("true");
-		}
-		else
-		{
-			//Serial.println("Sending to address");
-			errorReport(3, 9001);
-		}*/
 	}
 
 
