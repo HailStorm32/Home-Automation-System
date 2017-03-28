@@ -46,14 +46,14 @@ const int RANGE[5] = { giveRange(1, MY_ADDRESS), giveRange(2, MY_ADDRESS), giveR
 
 #include "MainFunctions.h"
 
-
-Radio data(MY_ADDRESS);
+Radio data(MY_ADDRESS, ERROR_LED);
 
 bool pingStatus = false;//debug only
 //char debug[MESSAGE_SIZE];
 //  char data2[] = "cat32";*/
 
-char codedMessage2[MESSAGE_SIZE] = "";
+//char codedMessage2[MESSAGE_SIZE] = "";
+String codedMessage2;
 float temp = 0;
 int motion = 0;
 int fromAdd = 0;
@@ -112,13 +112,13 @@ void setup()
 void loop()
 {
 	
-	data.encodeMessage(74.6, 564, 9001); //, codedMessage2);
+	codedMessage2 = data.encodeMessage(65.6, 110, 9001);
 
 	Serial.println("VVVV");
 	Serial.println(codedMessage2);
 	Serial.println("___________________");
 
-	data.decodeMessage(temp, motion, fromAdd);
+	data.decodeMessage(temp, motion, fromAdd, codedMessage2);
 
 	Serial.println(temp);
 	Serial.println(motion);

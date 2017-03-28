@@ -29,6 +29,7 @@
 //		08 -- Incorrect acknowledgement ping recieved from [****]
 //		09 -- Time out, No ping received
 //		10 -- Time out, No data received
+//		11 -- Mesage not formated 
 //
 // Arguments:
 //		 errorCode (I) -- integer # between 1-10
@@ -168,10 +169,20 @@ void errorReport(int errorCode, int address = 0) //Function that will take an er
 	else if (errorCode == 10)
 	{
 		Serial.println(" ");
-		Serial.println("ERROR 009!! Time out! No data received!!");
+		Serial.println("ERROR 010!! Time out! No data received!!");
 
 		digitalWrite(ERROR_LED, HIGH);
 		delay(1000);
+		digitalWrite(ERROR_LED, LOW);
+	}
+
+	else if (errorCode == 11)
+	{
+		Serial.println(" ");
+		Serial.println("ERROR 011!! Mesage not formated!!");
+
+		digitalWrite(ERROR_LED, HIGH);
+		delay(2000);
 		digitalWrite(ERROR_LED, LOW);
 	}
 

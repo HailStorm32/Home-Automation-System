@@ -5,12 +5,13 @@
 
 //RF24 radio(9, 10);
 
-Radio::Radio(int myAddress)
+Radio::Radio(unsigned int myAddress, unsigned int errorLed)
 {
-	temperature = 0;
-	motion = 0;
+	//temperature = 0;
+	//motion = 0;
 	fromAddress = myAddress;
-	toAddress;
+	//toAddress;
+	this->errorLed = errorLed;
 }
 
 bool Radio::sendData(float temperature, int motion, int fromAddress, int toAddress)
@@ -24,7 +25,7 @@ bool Radio::receiveData()
 }
 
 
-void Radio::encodeMessage(float temperature, int motion, int fromAddress)//, char codedMessage[])
+String Radio::encodeMessage(float temperature, int motion, int fromAddress)
 {
 	/*
 	Follows the following format:
@@ -37,7 +38,13 @@ void Radio::encodeMessage(float temperature, int motion, int fromAddress)//, cha
 	9001-74.36-589x
 	*/
 
+	if ((fromAddress < 9001 || fromAddress > 9999) || (motion < 0 || motion > 9999) || (temperature < 0 || temperature > 9999))
+	{
+		return "ERROR";
+	}
+
 	String numberHolder;
+	String messageToReturn;
 
 	numberHolder = static_cast<String>(fromAddress);
 
@@ -68,38 +75,58 @@ void Radio::encodeMessage(float temperature, int motion, int fromAddress)//, cha
 		message[i + 11] = numberHolder[i];
 	}
 
+	//Enter the end char
 	message[numberHolder.length() + 11] = 'x';
 
-	Serial.println(message);//debug only
+	messageToReturn = message;
+
+	//Serial.println(message);//debug only
+
+	return messageToReturn;
 }
 
-void Radio::decodeMessage(float &temperature, int &motion, int &fromAddress)//char codedMessage[], float &temperature, int &motion, int &fromAddress)
+
+bool Radio::decodeMessage(float &temperature, int &motion, int &fromAddress,const String &codedMessage)
 {
 	String stringHolder;
 	int indx = 0;
 	int secondIndx = 0;
+	char messageData[5];
 
-	/*
-	TO-DO:
-		Add checker here that will only proceed if 'motion' is NOT null
-	*/
+	strcpy(message, codedMessage.c_str());
+
+	if (isValidMessage(codedMessage) == false)
+	{
+		//Error report #011
+		Serial.println(" ");
+		Serial.println("ERROR 011!! Mesage not formated!!");
+
+		digitalWrite(errorLed, HIGH);
+		delay(2000);
+		digitalWrite(errorLed, LOW);
+
+		return false;
+	}
 
 
 	//Get fromAddress data
 	while (message[indx] != '-')
 	{
-		stringHolder[indx] = message[indx];
+		//Serial.println(message[indx]);
+		stringHolder += message[indx];
 		indx++;
-	}
+	}   
 
 	fromAddress = atoi(stringHolder.c_str()); //Convert string into int
-
+	//Serial.println(fromAddress);//debug only
 	indx++;
+
+	stringHolder = "";
 
 	//Get temperature data
 	while (message[indx] != '-')
 	{
-		stringHolder[secondIndx] = message[indx];
+		stringHolder += message[indx];
 		indx++;
 		secondIndx++;
 	}
@@ -109,17 +136,19 @@ void Radio::decodeMessage(float &temperature, int &motion, int &fromAddress)//ch
 	indx++;
 	secondIndx = 0;
 
+	stringHolder = "";
+
 	//Get motion data
 	while (message[indx] != 'x')
 	{
-		stringHolder[secondIndx] = message[indx];
+		stringHolder += message[indx];
 		indx++;
 		secondIndx++;
 	}
 
 	motion = atoi(stringHolder.c_str()); //Convert string into int
 
-	//return true;
+	return true;
 }
 
 bool Radio::waitForData(int waitTime)
@@ -140,4 +169,28 @@ bool Radio::waitForData(int waitTime)
 	{
 		while (!radio.available()) {}
 	}*/
+}
+
+bool Radio::isValidMessage(const String &codedMessage)
+{
+	unsigned int spacerCount = 0;
+
+	//count the spacers ( - ) and end char ( x )
+	for (int indx = 0; indx < codedMessage.length(); indx++)
+	{
+		if (codedMessage[indx] == '-' || codedMessage[indx] == 'x')
+		{
+			spacerCount++;
+		}
+	}
+
+	//If message was formated correctly, the variable should equal 3
+	if (spacerCount == 3)
+	{
+		return true;
+	}
+	else
+	{
+		return false;
+	}
 }

@@ -1,12 +1,12 @@
 #pragma once
 
-const int MESSAGE_SIZE = 17;
+const unsigned int MESSAGE_SIZE = 17;
 
 class Radio
 {
 public:
 	//--------- Constructor --------//
-	Radio(int myAddress);
+	Radio(unsigned int myAddress, unsigned int errorLed);
 
 	//--------- Other ----------//
 	/*
@@ -39,11 +39,11 @@ public:
 	Returns:
 	NONE
 	*/
-	void encodeMessage(float temperature, int motion, int fromAddress);// , char codedMessage[]);
+	String encodeMessage(float temperature, int motion, int fromAddress);
 
 	/*
 	Input:
-	codedMessage (I) -- cstring of coded message
+	codedMessage (I) -- string of coded message
 	temperature (O)
 	motion (O)
 	fromAddress (O)
@@ -51,17 +51,18 @@ public:
 	True -- decoded successfully
 	False -- NOT decoded successfully
 	*/
-	void decodeMessage(float &temperature, int &motion, int &fromAddress);//char codedMessagefloat[], float &temperature, int &motion, int &fromAddress);
+	bool decodeMessage(float &temperature, int &motion, int &fromAddress, const String &codedMessage);//char codedMessagefloat[], float &temperature, int &motion, int &fromAddress);
 
 
 
 private:
 	char message[MESSAGE_SIZE];
-	
-	int temperature;
-	int motion;
+
+	//int temperature;
+	//int motion;
 	int fromAddress;
-	int toAddress;
+	//int toAddress;
+	int errorLed;
 
 	/*
 	Input:
@@ -94,4 +95,13 @@ private:
 		False -- there was NO data to read with in the specified time
 	*/
 	bool waitForData(int waitTime);
+
+	/*
+	Input:
+		codedMessage (I) -- string of coded message
+	Returns:
+		True -- message was formated correctly
+		False -- message was NOT formated correctly
+	*/
+	bool isValidMessage(const String &codedMessage);
 };
