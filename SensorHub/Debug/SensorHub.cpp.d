@@ -20,5 +20,5 @@ C:\Users\Demetri\ Van\ Sickle\AppData\Local\Temp\VMBuilds\SensorHub\nano_atmega3
  C:\Users\Demetri\ Van\ Sickle\Documents\Arduino\libraries\DHT_sensor_library/DHT.h \
  C:\Users\Demetri\ Van\ Sickle\AppData\Local\Temp\VMBuilds\SensorHub\nano_atmega328\Debug\hub.h \
  C:\Users\Demetri\ Van\ Sickle\AppData\Local\Temp\VMBuilds\SensorHub\nano_atmega328\Debug\radio.h \
- C:\Users\Demetri\ Van\ Sickle\AppData\Local\Temp\VMBuilds\SensorHub\nano_atmega328\Debug\Init_Functions.h \
- C:\Users\Demetri\ Van\ Sickle\AppData\Local\Temp\VMBuilds\SensorHub\nano_atmega328\Debug\MainFunctions.h
+ C:\Users\Demetri\ Van\ Sickle\AppData\Local\Temp\VMBuilds\SensorHub\nano_atmega328\Debug\constants.h \
+ C:\Users\Demetri\ Van\ Sickle\AppData\Local\Temp\VMBuilds\SensorHub\nano_atmega328\Debug\Init_Functions.h

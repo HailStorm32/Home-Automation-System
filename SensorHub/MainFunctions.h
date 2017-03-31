@@ -199,7 +199,7 @@ void errorReport(int errorCode, int address = 0) //Function that will take an er
 //		True -- recived an acknowledgement that the messsage was recived
 //		False -- no acknowledgement was recived
 //==========================================================================
-bool receiveAcknowledge(int index)
+/*bool receiveAcknowledge(int index)
 {
 	bool didAcknowledge = false;
 	int targetTime = 0;
@@ -235,7 +235,7 @@ bool receiveAcknowledge(int index)
 	}
 
 	return didAcknowledge;
-}
+}*/
 
 //=========================================================================
 // Function: sendPings
@@ -247,7 +247,7 @@ bool receiveAcknowledge(int index)
 //		True -- pings were sent & recived successfully
 //		False -- pings failed 
 //=========================================================================
-bool sendPing(int index)
+/*bool sendPing(int index)
 {
 	int toAddress = 0;
 	int targetTime = 0;
@@ -279,7 +279,7 @@ bool sendPing(int index)
 
 
 	return true;
-}
+}*/
 
 
 //=========================================================================
@@ -294,7 +294,7 @@ bool sendPing(int index)
 //		True -- pings recived successfully
 //		False -- pings not received 
 //=========================================================================
-bool receivePing()
+/*bool receivePing()
 {
 	bool pingReceive = false;
 	int targetTime = 0;
@@ -355,7 +355,7 @@ bool receivePing()
 	} while (toAddress != MY_ADDRESS); //Loop until we receive the address that we want
 
 	return pingReceive;
-}
+}*/
 
 
 //=========================================================================
@@ -369,7 +369,7 @@ bool receivePing()
 //		True -- pings were successful
 //		False -- pings failed
 //=========================================================================
-bool startupPings()
+/*bool startupPings()
 {
 	bool pingsSuccess = false;
 	int debug = 0; //for debug only
@@ -397,7 +397,7 @@ bool startupPings()
 	}
 
 	return pingsSuccess;
-}
+}*/
 
 
 //=========================================================================

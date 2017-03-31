@@ -3,26 +3,97 @@
 #include <RF24.h>
 #include "radio.h"
 
-//RF24 radio(9, 10);
 
-Radio::Radio(unsigned int myAddress, unsigned int errorLed)
+
+Radio::Radio(const int myAddress, const int range[], RF24* radioPointer)
 {
-	//temperature = 0;
-	//motion = 0;
+	//Setup the pointer to the RF24 radio class
+	radioP = radioPointer;
+
+	//Set variables
+	this->myAddress = myAddress;
 	fromAddress = myAddress;
-	//toAddress;
-	this->errorLed = errorLed;
+
+	for (int indx = 0; indx < RANGE_SIZE; indx++)
+	{
+		this->range[indx] = range[indx];
+	}
 }
 
 bool Radio::sendData(float temperature, int motion, int fromAddress, int toAddress)
 {
-	return false;
+	String codedMessage;
+
+	//Pack the data into a single string
+	codedMessage = encodeMessage(temperature, motion, fromAddress);
+
+	digitalWrite(DEBUG_LED, HIGH);
+
+	radioP->openWritingPipe(toAddress);
+	radioP->stopListening();
+
+	if (radioP->write(codedMessage.c_str(), MESSAGE_SIZE))
+	{
+		Serial.println("true");
+	}
+	else
+	{
+		Serial.println("Error Sending...");
+		//errorReport(3, 9001);
+	}
+
+	digitalWrite(DEBUG_LED, LOW);
 }
 
 bool Radio::receiveData()
 {
-	return false;
+	int address = 0;
+	char codedMessage[MESSAGE_SIZE] = {};
+
+	radio.openReadingPipe(0, myAddress); //must be set to receiver's address. Will only receive data from hubs that have opened writing pipes to this address
+	radio.startListening();
+
+	waitForData(-1);
+	Serial.println(sizeof(codedMessage));
+	radio.read(codedMessage, MESSAGE_SIZE);
+
+
+
+	return true;
 }
+
+bool Radio::startupPings()
+{
+	bool pingsSuccess = false;
+	int debug = 0; //for debug only
+
+	if (myAddress == 9001)
+	{
+
+		for (int i = 0; i < 5; i++)
+		{
+
+			debug = range[i];//debug only
+
+			if (sendPing(i) == true && receiveAcknowledge(i) == true)
+			{
+				Serial.println("Successful contact with hub ");//debug only
+				Serial.println(debug);//debug only
+			}
+		}
+
+	}
+	else
+	{
+		Serial.println("Waiting for pings...");//debug only
+		pingsSuccess = receivePing();
+	}
+
+	return pingsSuccess;
+}
+
+
+
 
 
 String Radio::encodeMessage(float temperature, int motion, int fromAddress)
@@ -85,8 +156,7 @@ String Radio::encodeMessage(float temperature, int motion, int fromAddress)
 	return messageToReturn;
 }
 
-
-bool Radio::decodeMessage(float &temperature, int &motion, int &fromAddress,const String &codedMessage)
+bool Radio::decodeMessage(float &temperature, int &motion, int &fromAddress, const String &codedMessage)
 {
 	String stringHolder;
 	int indx = 0;
@@ -101,9 +171,9 @@ bool Radio::decodeMessage(float &temperature, int &motion, int &fromAddress,cons
 		Serial.println(" ");
 		Serial.println("ERROR 011!! Mesage not formated!!");
 
-		digitalWrite(errorLed, HIGH);
+		digitalWrite(ERROR_LED, HIGH);
 		delay(2000);
-		digitalWrite(errorLed, LOW);
+		digitalWrite(ERROR_LED, LOW);
 
 		return false;
 	}
@@ -115,7 +185,7 @@ bool Radio::decodeMessage(float &temperature, int &motion, int &fromAddress,cons
 		//Serial.println(message[indx]);
 		stringHolder += message[indx];
 		indx++;
-	}   
+	}
 
 	fromAddress = atoi(stringHolder.c_str()); //Convert string into int
 	//Serial.println(fromAddress);//debug only
@@ -158,7 +228,7 @@ bool Radio::waitForData(int waitTime)
 	if (waitTime >= 0)
 	{
 		targetTime = millis() + waitTime;
-		while (!radio.available() && millis() < targetTime) {}
+		while (!radioP->available() && millis() < targetTime) {}
 
 		if (millis() > targetTime)
 		{
@@ -167,7 +237,7 @@ bool Radio::waitForData(int waitTime)
 	}
 	else
 	{
-		while (!radio.available()) {}
+		while (!radioP->available()) {}
 	}*/
 }
 
@@ -193,4 +263,146 @@ bool Radio::isValidMessage(const String &codedMessage)
 	{
 		return false;
 	}
+}
+
+bool Radio::receivePing()
+{
+	bool pingReceive = false;
+	int targetTime = 0;
+	int toAddress = 0;
+	int fromAddress = 0;
+
+	radioP->openReadingPipe(1, myAddress);
+	radioP->startListening();
+
+
+	do
+	{
+		//\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ Receive the "toAddress" //////////////////////////
+		targetTime = millis() + 30000;
+		while (!radioP->available() && millis() < targetTime) {} //Wait until there is a message to read, but dont wait longer than 30sec
+
+		if (radioP->available())
+		{
+			Serial.println("Receiving Data..."); //debug only
+			radioP->read(&toAddress, sizeof(toAddress));
+		}
+		else if (millis() > targetTime)
+		{
+			Serial.println("ERROR!!!");
+			//errorReport(9);
+		}
+
+		//\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ Receive the "fromAddress" //////////////////////////
+		targetTime = millis() + 30000;
+		while (!radioP->available() && millis() < targetTime) {} //Wait until there is a message to read, but dont wait longer than 30sec
+
+		if (radioP->available())
+		{
+			radioP->read(&fromAddress, sizeof(fromAddress));
+		}
+		else if (millis() > targetTime)
+		{
+			Serial.println("ERROR!!!");
+			//errorReport(9);
+		}
+
+		//\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ Make Sure we received the right address ///////////////////
+		if (toAddress == myAddress)
+		{
+			radioP->stopListening();
+			radioP->openWritingPipe(range[0]);
+
+			Serial.println("Sending Ping back..."); //debug only
+
+			if (radioP->write(&myAddress, sizeof(myAddress)))
+			{
+				pingReceive = true;
+			}
+			else
+			{
+				Serial.println("ERROR!!!");
+				//errorReport(3, range[0]);
+			}
+		}
+
+	} while (toAddress != myAddress); //Loop until we receive the address that we want
+
+	return pingReceive;
+}
+
+bool Radio::sendPing(int index)
+{
+	int toAddress = 0;
+	int targetTime = 0;
+
+	Serial.println(" ");//debug only
+	Serial.println("Sending pings...");//debug only
+
+	radioP->stopListening();
+	radioP->openWritingPipe(range[index]);
+
+	//\\\\\\\\\\\\\\\\\\\\\\\\\ Send "To Address" //////////////////////////
+
+	toAddress = range[index];
+
+	if (!radioP->write(&toAddress, sizeof(toAddress)))
+	{
+		Serial.println("ERROR!!!");
+		//errorReport(3, toAddress);
+		return false;
+	}
+
+	delay(200);
+
+	//\\\\\\\\\\\\\\\\\\\\\\\\ Send "from address" ////////////////////////
+	if (!radioP->write(&myAddress, sizeof(myAddress)))
+	{
+		Serial.println("ERROR!!!");
+		//errorReport(3, toAddress);
+		return false;
+	}
+
+
+	return true;
+}
+
+bool Radio::receiveAcknowledge(int index)
+{
+	bool didAcknowledge = false;
+	int targetTime = 0;
+	int data = 0;
+	int acknowledgerAddress = range[index];
+
+	radioP->openReadingPipe(1, myAddress);
+	radioP->startListening();
+
+	targetTime = millis() + 1000;
+
+	while (!radioP->available() && millis() < targetTime) {} //Wait until there is a message to read, but dont wait longer than 1sec
+
+	if (radioP->available())
+	{
+		radioP->read(&data, sizeof(data));
+
+		if (data == acknowledgerAddress)
+		{
+			Serial.println("Received acknowledge...");//debug only
+			didAcknowledge = true;
+		}
+		else
+		{
+			Serial.println("ERROR!!! Incorrect acknowledgement ping recieved");
+			//errorReport(8, acknowledgerAddress); //Report that we got the wrong data back
+			didAcknowledge = false;
+		}
+	}
+	else if (millis() > targetTime)///we went over time, report it
+	{
+		Serial.println("ERROR!!! No acknowledgement ping recieved");
+		//errorReport(7, acknowledgerAddress);
+		didAcknowledge = false;
+	}
+
+	return didAcknowledge;
 }

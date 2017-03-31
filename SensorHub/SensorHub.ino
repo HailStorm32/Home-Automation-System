@@ -8,13 +8,14 @@
 //																							    //
 //**********************************************************************************************//
 
+//#include "constants.h"
 #include <SPI.h>
 #include "nRF24L01.h"
 #include <RF24.h>
 #include <DHT.h>
 #include "hub.h"
 #include "radio.h"
-
+#include "Init_Functions.h"
 
 #define DHTPIN 6     // Define what digital pin the temp sensor is connected to
 #define DHTTYPE DHT11  //Define the type of temp sensor we are useing
@@ -23,46 +24,20 @@ RF24 radio(9, 10); //Set what pins the radio are in
 
 DHT dht(DHTPIN, DHTTYPE); // Initialize temp sensor
 
-const int STATION[8] = { 9001, 9002, 9003, 9004, 9005, 9006, 9007, 9008 }; //Set the addresses for all stations
-
-//Set Arduino pins
-const byte SWITCH_IN_1 = 2;
-const byte SWITCH_IN_2 = 3;
-const byte SWITCH_IN_3 = 4;
-const byte ERROR_LED = 7;
-const byte PIR = 5;
-const byte DEBUG_LED = 8;
-
-//Timer consts
-const int SEND_TIME = 10000; //Time it takes a hub to completly send a message
-const int BASE_CYCLE_TIME = 6000; //Time between data transmissions (in milliseconds) //Base time will be multiplied by each stations number so each hub will send data at different times 
-const int READ_CYCLE = 3500;  //Time between reading the temp sensor (in milliseconds)  1000 = 1sec
-
-#include "Init_Functions.h"
-
 const int MY_ADDRESS = setAddress();
 const int RANGE[5] = { giveRange(1, MY_ADDRESS), giveRange(2, MY_ADDRESS), giveRange(3, MY_ADDRESS), giveRange(4, MY_ADDRESS), giveRange(5, MY_ADDRESS) };
-//const int MESSAGE_SIZE = 12;
 
-#include "MainFunctions.h"
-
-Radio data(MY_ADDRESS, ERROR_LED);
+Radio mainRadio(MY_ADDRESS, RANGE, &radio);
 
 bool pingStatus = false;//debug only
-//char debug[MESSAGE_SIZE];
-//  char data2[] = "cat32";*/
-
-//char codedMessage2[MESSAGE_SIZE] = "";
-String codedMessage2;
-float temp = 0;
-int motion = 0;
-int fromAdd = 0;
 
 Hub hub1; 
 
 void setup()
 {
 	Serial.begin(9600);
+
+	Serial.println("in setup");
 
 	//Startup radio and temperature sensors
 	radio.begin();
@@ -79,7 +54,7 @@ void setup()
 
 	digitalWrite(DEBUG_LED, HIGH); //Show that we have entered the "setup" stage
 
-	pingStatus = startupPings();
+	pingStatus = mainRadio.startupPings();
 
 	digitalWrite(DEBUG_LED, LOW); //Show that we have exited the "setup" stage
 
@@ -112,17 +87,17 @@ void setup()
 void loop()
 {
 	
-	codedMessage2 = data.encodeMessage(65.6, 110, 9001);
+	//codedMessage2 = data.encodeMessage(10, 0, 9001);
 
 	Serial.println("VVVV");
-	Serial.println(codedMessage2);
+	//Serial.println(codedMessage2);
 	Serial.println("___________________");
 
-	data.decodeMessage(temp, motion, fromAdd, codedMessage2);
+	//data.decodeMessage(temp, motion, fromAdd, codedMessage2);
 
-	Serial.println(temp);
-	Serial.println(motion);
-	Serial.println(fromAdd);
+	//Serial.println(temp);
+	//Serial.println(motion);
+	//Serial.println(fromAdd);
 
 	while (true)
 	{

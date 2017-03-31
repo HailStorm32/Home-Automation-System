@@ -119,6 +119,7 @@
     </None>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="constants.h" />
     <ClInclude Include="hub.h" />
     <ClInclude Include="Init_Functions.h" />
     <ClInclude Include="MainFunctions.h" />

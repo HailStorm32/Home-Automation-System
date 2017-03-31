@@ -16,4 +16,5 @@ C:\Users\Demetri\ Van\ Sickle\AppData\Local\Temp\VMBuilds\SensorHub\nano_atmega3
  C:\Users\Demetri\ Van\ Sickle\Documents\Arduino\libraries\RF24/nRF24L01.h \
  C:\Users\Demetri\ Van\ Sickle\Documents\Arduino\libraries\RF24/RF24.h \
  C:\Users\Demetri\ Van\ Sickle\Documents\Arduino\libraries\RF24/RF24_config.h \
- C:\Users\Demetri\ Van\ Sickle\AppData\Local\Temp\VMBuilds\SensorHub\nano_atmega328\Debug\radio.h
+ C:\Users\Demetri\ Van\ Sickle\AppData\Local\Temp\VMBuilds\SensorHub\nano_atmega328\Debug\radio.h \
+ C:\Users\Demetri\ Van\ Sickle\AppData\Local\Temp\VMBuilds\SensorHub\nano_atmega328\Debug\constants.h

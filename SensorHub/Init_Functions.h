@@ -1,3 +1,4 @@
+#pragma once
 //**********************************************************************************************//
 //																								//
 //					This code by Demetrius Van Sickle is licensed under a						//
@@ -15,9 +16,6 @@ Self Note:
 Each hub can only write to 1x 'ToAddress' (the hub its sending it to) at a time, but can recive from multiple different 'FromAddress' (the hub's address) at a time.
 */
 
-
-
-
 //========================================================================
 // Function: setAddress
 // Description: Decode signal from OR gate switch and assign address 
@@ -29,11 +27,14 @@ Each hub can only write to 1x 'ToAddress' (the hub its sending it to) at a time,
 //=========================================================================
 int setAddress()
 {
+	Serial.begin(9600);
 	//delay(2000);
 	bool A = digitalRead(SWITCH_IN_1);
 	bool B = digitalRead(SWITCH_IN_2);
 	bool C = digitalRead(SWITCH_IN_3);
-
+	
+	Serial.println("01");//Debug only
+	
 	if (A == false && B == false && C == false)
 	{
 		return STATION[0]; //9001
@@ -90,6 +91,7 @@ int setAddress()
 //=========================================================================
 int giveRange(int choice, int MY_ADDRESS)
 {
+	Serial.println("02");
 	switch (choice)
 	{
 	case 1:
