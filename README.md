@@ -4,15 +4,17 @@ This repository holds the code for a home automation system that I am creating f
 ><i>This project is being developed on my free time, so development will be slow.</i>
 
 <br>
-####Project Goal:
+
+#### Project Goal:
 My goal is to create a cheaper (and possibly better) alternative to home automation systems on the market.
 
 The system will consist of sensor hubs (or stations) that will be placed in each room of a house. Each hub will report wirelessly to the main hub which will compile all of the data and broadcast it on a secure server that the home owner can access to view and control temperature, room activity, etc. 
 
 <br>
-####Components:
-<br>
-#####Sensor Hub:
+
+#### Components:
+
+##### Sensor Hub:
 Each sensor hub will consist of the following:
 ><i>The hub is still in development, so some of these items may change.</i>
 
@@ -25,8 +27,10 @@ Each sensor hub will consist of the following:
     <li>1x <a href="http://www.ebay.com/itm/301122784490?_trksid=p2057872.m2749.l2649&ssPageName=STRK%3AMEBIDX%3AIT">8 position DIP Switch</a></li>
     <li>1x 3mm OR 5mm Red LED</li>
 </ul>
+
 <br>
-#####Server:
+
+##### Server:
 The server/main hub will likely consist of the following:
 ><i>The server/main hub has not been developed, so all of these items are just ideas and may change.</i>
 ><i>The server/main hub will not be started on until the sensor hub has reach about 75% completion.</i>
@@ -38,9 +42,10 @@ The server/main hub will likely consist of the following:
 </ul>
 
 <br>
-####Setting Up:
 
-#####The IDE:
+#### Setting Up:
+
+##### The IDE:
 To program the sensor hubs I am using Microsoft Visual Studio Community 2015 with an extension called Visual Micro that enables the ability to deploy to Arduino boards.
 ><i>Even though this code can be written in the Arduino IDE, the large size of the code and numerous tools that Visual Studio offers makes it a lot easier to use VS.</i>
 
@@ -48,16 +53,17 @@ To program the sensor hubs I am using Microsoft Visual Studio Community 2015 wit
     <li><a href="https://go.microsoft.com/fwlink/?LinkId=691978&clcid=0x409">Download VS Community 2015</a></li>
     <li>Download/Install <a href="http://www.visualmicro.com/page/Arduino-Visual-Studio-Downloads.aspx">Visual Micro extension</a></li>
     <li>Dowload and install the Arduino IDE <i>(Visual Micro uses some of its libraries)</i></li>
-    <li>Put the folder(s) that are in the "Libraries" folder into Arduino's Libraries folder.
+    <li>Put the folder(s) that are in the "Libraries" folder into Arduino's Libraries folder.</li>
 </ol>
 
 <br>
 
-#####Wiring Schematic:
+##### Wiring Schematic:
 The wiring schematic for this project can be found <a href="http://www.schematics.com/project/home-automation-system-35296/">here</a>.
 
 <br>
-#####Radio Setup:
+
+##### Radio Setup:
 <ul>
     <li><a href="https://goo.gl/u8zBUV">NRF24L01 pinout</a></li>
 </ul>
@@ -72,8 +78,10 @@ The wiring schematic for this project can be found <a href="http://www.schematic
 |6 (MOSI) |D11      |
 |7 (MISO) |D12      |
 |8 (IRQ)  |n/a      |
+
 <br>
-######Helpful References:
+
+###### Helpful References:
 <ul>
     <li><a href="http://starter-kit.nettigo.eu/2014/connecting-and-programming-nrf24l01-with-arduino-and-other-boards/">NRF24L01 tutorial</a></li>
     <li><a href="http://tmrh20.github.io/RF24/classRF24.html">NRF24L01 Driver Class Documenation</a></li>
