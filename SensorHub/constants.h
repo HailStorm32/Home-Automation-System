@@ -1,13 +1,22 @@
+//**********************************************************************************************//
+//																								//
+//					This code by Demetrius Van Sickle is licensed under a						//
+//				Creative Commons Attribution-NonCommercial 4.0 International License.			//
+//																								//
+//	The nRF24L01 and DHT libries used in this code are licensed by their respective owners		//
+//					and are issued under the GNU General Public License version 2.				//
+//																							    //
+//**********************************************************************************************//
 #pragma once
 const int STATION[8] = { 9001, 9002, 9003, 9004, 9005, 9006, 9007, 9008 }; //Set the addresses for all stations
 
 //Set Arduino pins
-const byte SWITCH_IN_1 = 2;
-const byte SWITCH_IN_2 = 3;
-const byte SWITCH_IN_3 = 4;
-const byte ERROR_LED = 7;
-const byte PIR = 5;
-const byte DEBUG_LED = 8;
+const int SWITCH_IN_1 = 2;
+const int SWITCH_IN_2 = 3;
+const int SWITCH_IN_3 = 4;
+const int ERROR_LED = 7;
+const int PIR = 5;
+const int DEBUG_LED = 8;
 
 //Timer consts
 const int SEND_TIME = 10000; //Time it takes a hub to completly send a message

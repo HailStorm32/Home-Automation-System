@@ -8,7 +8,6 @@
 //																							    //
 //**********************************************************************************************//
 
-//#include "constants.h"
 #include <SPI.h>
 #include "nRF24L01.h"
 #include <RF24.h>
@@ -27,11 +26,13 @@ DHT dht(DHTPIN, DHTTYPE); // Initialize temp sensor
 const int MY_ADDRESS = setAddress();
 const int RANGE[5] = { giveRange(1, MY_ADDRESS), giveRange(2, MY_ADDRESS), giveRange(3, MY_ADDRESS), giveRange(4, MY_ADDRESS), giveRange(5, MY_ADDRESS) };
 
-Radio mainRadio(MY_ADDRESS, RANGE, &radio);
+Hub hubSystem;
+
+Radio mainRadio(MY_ADDRESS, RANGE, &radio, &hubSystem);
 
 bool pingStatus = false;//debug only
 
-Hub hub1; 
+
 
 void setup()
 {
@@ -86,44 +87,37 @@ void setup()
 
 void loop()
 {
-	
-	//codedMessage2 = data.encodeMessage(10, 0, 9001);
 
 	Serial.println("VVVV");
 	//Serial.println(codedMessage2);
 	Serial.println("___________________");
 
-	//data.decodeMessage(temp, motion, fromAdd, codedMessage2);
-
-	//Serial.println(temp);
-	//Serial.println(motion);
-	//Serial.println(fromAdd);
-
-	while (true)
+	/*while (true)
 	{
 
-	}
+	}*/
 
 	if (MY_ADDRESS == 9001)
 	{
-		///dataReceive(debug);
+		mainRadio.receiveData();
+		
 
 		//Serial.println(debug);
 		Serial.println("----------");
 	}
 
 	//For debug VVV
-	if (MY_ADDRESS == 9003)
+	if (MY_ADDRESS == 9002)
 	{
-		//delay(2500);
-		//dataSend(data, 9001);
+		delay(2500);
+		mainRadio.sendData(100, 2, 9002, 9001);
 
 	}//^^^
 
 
-	if (MY_ADDRESS == 9002)
+	if (MY_ADDRESS == 9003)
 	{
-		//delay(2000);
+		delay(3000);
 
 		//dataSend(data2, 9001);
 

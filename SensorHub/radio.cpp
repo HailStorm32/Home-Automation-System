@@ -1,3 +1,12 @@
+//**********************************************************************************************//
+//																								//
+//					This code by Demetrius Van Sickle is licensed under a						//
+//				Creative Commons Attribution-NonCommercial 4.0 International License.			//
+//																								//
+//	The nRF24L01 and DHT libries used in this code are licensed by their respective owners		//
+//					and are issued under the GNU General Public License version 2.				//
+//																							    //
+//**********************************************************************************************//
 #include <SPI.h>
 #include "nRF24L01.h"
 #include <RF24.h>
@@ -5,10 +14,14 @@
 
 
 
-Radio::Radio(const int myAddress, const int range[], RF24* radioPointer)
+Radio::Radio(const int myAddress, const int range[], RF24* radioPointer, Hub* systemPointer)
 {
 	//Setup the pointer to the RF24 radio class
 	radioP = radioPointer;
+
+	//Setup the pointer to the Hub system class
+	//This will gives us access to errorReport
+	systemP = systemPointer;
 
 	//Set variables
 	this->myAddress = myAddress;
@@ -35,29 +48,41 @@ bool Radio::sendData(float temperature, int motion, int fromAddress, int toAddre
 	if (radioP->write(codedMessage.c_str(), MESSAGE_SIZE))
 	{
 		Serial.println("true");
+		digitalWrite(DEBUG_LED, LOW);
+		return true;
 	}
 	else
 	{
-		Serial.println("Error Sending...");
-		//errorReport(3, 9001);
+		///Serial.println("Error Sending...");
+		systemP->errorReport(3, 9001);
+		digitalWrite(DEBUG_LED, LOW);
+		return false;
 	}
-
-	digitalWrite(DEBUG_LED, LOW);
 }
 
 bool Radio::receiveData()
 {
 	int address = 0;
-	char codedMessage[MESSAGE_SIZE] = {};
+	char codedMessageCStr[MESSAGE_SIZE] = {};
+	String codedMessage;
+	float temp = 0;
+	int motion = 0;
+	int fromAddress = 0;
 
-	radio.openReadingPipe(0, myAddress); //must be set to receiver's address. Will only receive data from hubs that have opened writing pipes to this address
-	radio.startListening();
+	radioP->openReadingPipe(0, myAddress); //must be set to receiver's address. Will only receive data from hubs that have opened writing pipes to this address
+	radioP->startListening();
 
 	waitForData(-1);
-	Serial.println(sizeof(codedMessage));
-	radio.read(codedMessage, MESSAGE_SIZE);
+	Serial.println(sizeof(codedMessageCStr));
+	radioP->read(codedMessageCStr, MESSAGE_SIZE);
 
+	codedMessage = codedMessageCStr;
 
+	decodeMessage(temp, motion, fromAddress, codedMessage);
+
+	Serial.println(temp);
+	Serial.println(motion);
+	Serial.println(fromAddress);
 
 	return true;
 }
@@ -167,14 +192,7 @@ bool Radio::decodeMessage(float &temperature, int &motion, int &fromAddress, con
 
 	if (isValidMessage(codedMessage) == false)
 	{
-		//Error report #011
-		Serial.println(" ");
-		Serial.println("ERROR 011!! Mesage not formated!!");
-
-		digitalWrite(ERROR_LED, HIGH);
-		delay(2000);
-		digitalWrite(ERROR_LED, LOW);
-
+		systemP->errorReport(11);
 		return false;
 	}
 
@@ -223,7 +241,7 @@ bool Radio::decodeMessage(float &temperature, int &motion, int &fromAddress, con
 
 bool Radio::waitForData(int waitTime)
 {
-	/*int targetTime = 0;
+	int targetTime = 0;
 
 	if (waitTime >= 0)
 	{
@@ -232,13 +250,17 @@ bool Radio::waitForData(int waitTime)
 
 		if (millis() > targetTime)
 		{
-			//errorReport(10);
+			//Serial.println("ERROR! timeout!");//debug only
+			systemP->errorReport(10);
+			return false;
 		}
 	}
 	else
 	{
 		while (!radioP->available()) {}
-	}*/
+	}
+
+	return true;
 }
 
 bool Radio::isValidMessage(const String &codedMessage)
@@ -289,8 +311,8 @@ bool Radio::receivePing()
 		}
 		else if (millis() > targetTime)
 		{
-			Serial.println("ERROR!!!");
-			//errorReport(9);
+			//Serial.println("ERROR!!!");
+			systemP->errorReport(9);
 		}
 
 		//\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ Receive the "fromAddress" //////////////////////////
@@ -303,8 +325,8 @@ bool Radio::receivePing()
 		}
 		else if (millis() > targetTime)
 		{
-			Serial.println("ERROR!!!");
-			//errorReport(9);
+			//Serial.println("ERROR!!!");
+			systemP->errorReport(9);
 		}
 
 		//\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ Make Sure we received the right address ///////////////////
@@ -322,7 +344,7 @@ bool Radio::receivePing()
 			else
 			{
 				Serial.println("ERROR!!!");
-				//errorReport(3, range[0]);
+				systemP->errorReport(3, range[0]);
 			}
 		}
 
@@ -348,8 +370,8 @@ bool Radio::sendPing(int index)
 
 	if (!radioP->write(&toAddress, sizeof(toAddress)))
 	{
-		Serial.println("ERROR!!!");
-		//errorReport(3, toAddress);
+		//Serial.println("ERROR!!!");
+		systemP->errorReport(3, toAddress);
 		return false;
 	}
 
@@ -358,8 +380,8 @@ bool Radio::sendPing(int index)
 	//\\\\\\\\\\\\\\\\\\\\\\\\ Send "from address" ////////////////////////
 	if (!radioP->write(&myAddress, sizeof(myAddress)))
 	{
-		Serial.println("ERROR!!!");
-		//errorReport(3, toAddress);
+		//Serial.println("ERROR!!!");
+		systemP->errorReport(3, toAddress);
 		return false;
 	}
 
@@ -392,15 +414,15 @@ bool Radio::receiveAcknowledge(int index)
 		}
 		else
 		{
-			Serial.println("ERROR!!! Incorrect acknowledgement ping recieved");
-			//errorReport(8, acknowledgerAddress); //Report that we got the wrong data back
+			//Serial.println("ERROR!!! Incorrect acknowledgement ping recieved");
+			systemP->errorReport(8, acknowledgerAddress); //Report that we got the wrong data back
 			didAcknowledge = false;
 		}
 	}
 	else if (millis() > targetTime)///we went over time, report it
 	{
-		Serial.println("ERROR!!! No acknowledgement ping recieved");
-		//errorReport(7, acknowledgerAddress);
+		//Serial.println("ERROR!!! No acknowledgement ping recieved");
+		systemP->errorReport(7, acknowledgerAddress);
 		didAcknowledge = false;
 	}
 

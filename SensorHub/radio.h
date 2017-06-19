@@ -1,11 +1,21 @@
+//**********************************************************************************************//
+//																								//
+//					This code by Demetrius Van Sickle is licensed under a						//
+//				Creative Commons Attribution-NonCommercial 4.0 International License.			//
+//																								//
+//	The nRF24L01 and DHT libries used in this code are licensed by their respective owners		//
+//					and are issued under the GNU General Public License version 2.				//
+//																							    //
+//**********************************************************************************************//
 #pragma once
 #include "constants.h"
+#include "hub.h"
 
 class Radio
 {
 public:
 	//--------- Constructor --------//
-	Radio(const int myAddress, const int range[], RF24* radioPointer);
+	Radio(const int myAddress, const int range[], RF24* radioPointer, Hub* systemPointer);
 
 	//--------- Other ----------//
 	/*
@@ -46,6 +56,7 @@ private:
 
 	int fromAddress;
 	RF24 * radioP;
+	Hub * systemP;
 	int range[RANGE_SIZE];
 	int myAddress;
 

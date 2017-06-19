@@ -21,9 +21,6 @@
     <ClInclude Include="__vm\.SensorHub.vsarduino.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="MainFunctions.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Init_Functions.h">
       <Filter>Header Files</Filter>
     </ClInclude>

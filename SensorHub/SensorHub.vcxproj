@@ -122,7 +122,6 @@
     <ClInclude Include="constants.h" />
     <ClInclude Include="hub.h" />
     <ClInclude Include="Init_Functions.h" />
-    <ClInclude Include="MainFunctions.h" />
     <ClInclude Include="radio.h" />
     <ClInclude Include="__vm\.SensorHub.vsarduino.h" />
   </ItemGroup>

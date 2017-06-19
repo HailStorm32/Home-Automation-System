@@ -1,4 +1,3 @@
-#pragma once
 //**********************************************************************************************//
 //																								//
 //					This code by Demetrius Van Sickle is licensed under a						//
@@ -8,6 +7,7 @@
 //					and are issued under the GNU General Public License version 2.				//
 //																							    //
 //**********************************************************************************************//
+#pragma once
 
 
 
