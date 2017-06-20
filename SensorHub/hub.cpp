@@ -90,7 +90,7 @@ void Hub::errorReport(int errorCode, int address)
 
 		return;
 
-	case 3:
+	case 3:			
 		Serial.println(" ");
 		Serial.print("ERROR 003!! Unable to contact hub ");
 		Serial.print(address);
@@ -104,7 +104,6 @@ void Hub::errorReport(int errorCode, int address)
 		digitalWrite(ERROR_LED, LOW);
 		//delay(700);
 		//}
-
 		return;
 
 	case 4:

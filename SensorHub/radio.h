@@ -40,6 +40,24 @@ public:
 	bool receiveData();
 
 	/*
+	Input:
+		toAddress -- The address of the hub we want data from
+	Returns:
+		False -- if failed
+		True -- if succeeded
+	*/
+	bool requestData(int toAddress);
+
+	/*
+	Description:
+		Will wait for a request from the master hub
+	Return Value:
+		True -- received a request for data
+		False -- waiting for request
+	*/
+	bool waitForRequest();
+
+	/*
 	Description:
 		Will send or receive pings based on hub's address
 		Will only do so for up to address 1004
@@ -126,7 +144,7 @@ private:
 	Description: 
 		Receive acknowledgement back from ping
 	Arguments:
-  		acknowledgerAddress -- Address of thehub we want an acknowledge from
+  		acknowledgerAddress -- Address of the hub we want an acknowledge from
 	Return Values:
   		True -- recived an acknowledgement that the messsage was recived
   		False -- no acknowledgement was recived

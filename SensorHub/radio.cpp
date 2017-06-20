@@ -42,19 +42,20 @@ bool Radio::sendData(float temperature, int motion, int fromAddress, int toAddre
 
 	digitalWrite(DEBUG_LED, HIGH);
 
-	radioP->openWritingPipe(toAddress);
 	radioP->stopListening();
+	radioP->openWritingPipe(toAddress);
 
 	if (radioP->write(codedMessage.c_str(), MESSAGE_SIZE))
 	{
 		Serial.println("true");
 		digitalWrite(DEBUG_LED, LOW);
+		radioP->txStandBy();
 		return true;
 	}
 	else
 	{
 		///Serial.println("Error Sending...");
-		systemP->errorReport(3, 9001);
+		systemP->errorReport(3, toAddress);
 		digitalWrite(DEBUG_LED, LOW);
 		return false;
 	}
@@ -80,11 +81,78 @@ bool Radio::receiveData()
 
 	decodeMessage(temp, motion, fromAddress, codedMessage);
 
+	radioP->closeReadingPipe(0);
+
 	Serial.println(temp);
 	Serial.println(motion);
 	Serial.println(fromAddress);
 
 	return true;
+}
+
+bool Radio::requestData(int toAddress)
+{
+	//long targetTime = 0;
+	
+	radioP->stopListening();
+	radioP->openWritingPipe(toAddress);
+
+	digitalWrite(DEBUG_LED, HIGH);
+
+	/*targetTime = millis() + 500;
+	while(radioP->write("S", sizeof("S")) != true && millis() < targetTime){}
+
+	if (millis() > targetTime)
+	{
+		digitalWrite(DEBUG_LED, LOW);
+		systemP->errorReport(10);
+		systemP->errorReport(3, toAddress);
+		return false;
+	}
+	else
+	{
+		digitalWrite(DEBUG_LED, LOW);
+		radioP->txStandBy();
+		return true;
+	}*/
+	
+	
+	if (radioP->write("S", sizeof("S")))
+	{
+		digitalWrite(DEBUG_LED, LOW);
+		radioP->txStandBy();
+		return true;
+	}
+	else
+	{
+		systemP->errorReport(3, toAddress);
+		digitalWrite(DEBUG_LED, LOW);
+		return false;
+	}
+}
+
+bool Radio::waitForRequest()
+{
+	char typeOfRequest[1];
+	
+	radioP->openReadingPipe(0, myAddress); //must be set to receiver's address. Will only receive data from hubs that have opened writing pipes to this address
+	radioP->startListening();
+
+	Serial.println("Waitng for request...");
+	waitForData(-1);
+	Serial.println("Got...");
+
+	radioP->read(typeOfRequest, sizeof(typeOfRequest));
+
+	if (typeOfRequest[0] == 'S')
+	{
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+
 }
 
 bool Radio::startupPings()

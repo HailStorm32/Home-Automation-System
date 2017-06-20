@@ -92,35 +92,22 @@ void loop()
 	//Serial.println(codedMessage2);
 	Serial.println("___________________");
 
-	/*while (true)
+	while (true)
 	{
+		if (MY_ADDRESS == 9001)
+		{
+			delay(2000);
+			if (mainRadio.requestData(9002))
+			{
+				mainRadio.receiveData();
+			}
+		}
+		else if (MY_ADDRESS == 9002)
+		{
+			mainRadio.waitForRequest();
 
-	}*/
-
-	if (MY_ADDRESS == 9001)
-	{
-		mainRadio.receiveData();
-		
-
-		//Serial.println(debug);
-		Serial.println("----------");
-	}
-
-	//For debug VVV
-	if (MY_ADDRESS == 9002)
-	{
-		delay(2500);
-		mainRadio.sendData(100, 2, 9002, 9001);
-
-	}//^^^
-
-
-	if (MY_ADDRESS == 9003)
-	{
-		delay(3000);
-
-		//dataSend(data2, 9001);
-
+			mainRadio.sendData(65.3, 5, MY_ADDRESS, 9001);
+		}
 	}
 
 
