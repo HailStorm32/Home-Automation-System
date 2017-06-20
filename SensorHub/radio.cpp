@@ -74,7 +74,7 @@ bool Radio::receiveData()
 	radioP->startListening();
 
 	waitForData(-1);
-	Serial.println(sizeof(codedMessageCStr));
+	//Serial.println(sizeof(codedMessageCStr));
 	radioP->read(codedMessageCStr, MESSAGE_SIZE);
 
 	codedMessage = codedMessageCStr;

@@ -87,6 +87,7 @@ void setup()
 
 void loop()
 {
+	String request;
 
 	Serial.println("VVVV");
 	//Serial.println(codedMessage2);
@@ -96,18 +97,40 @@ void loop()
 	{
 		if (MY_ADDRESS == 9001)
 		{
-			delay(2000);
-			if (mainRadio.requestData(9002))
+			while (Serial.available() > 0)
 			{
-				mainRadio.receiveData();
+				request = Serial.readString();
+			}
+
+			if (request == "9002")
+			{
+				if (mainRadio.requestData(9002))
+				{
+					Serial.println("9002:");
+					mainRadio.receiveData();
+					Serial.println("___________________");
+					Serial.println(" ");
+				}
+			}
+			else if (request == "9003")
+			{
+				if (mainRadio.requestData(9003))
+				{
+					Serial.println("9003:");
+					mainRadio.receiveData();
+					Serial.println("___________________");
+					Serial.println(" ");
+				}
 			}
 		}
-		else if (MY_ADDRESS == 9002)
+		else
 		{
 			mainRadio.waitForRequest();
 
-			mainRadio.sendData(65.3, 5, MY_ADDRESS, 9001);
+			mainRadio.sendData(((dht.readTemperature() * 1.8) + 32), 5, MY_ADDRESS, 9001);
 		}
+
+		request = "";
 	}
 
 
