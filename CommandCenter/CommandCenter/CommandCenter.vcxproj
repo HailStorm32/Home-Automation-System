@@ -142,10 +142,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Hub.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="Serial.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Hub.h" />
     <ClInclude Include="Serial.h" />
     <ClInclude Include="stdafx.h" />
   </ItemGroup>

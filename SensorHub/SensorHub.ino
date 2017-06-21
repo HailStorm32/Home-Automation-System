@@ -38,7 +38,7 @@ void setup()
 {
 	Serial.begin(9600);
 
-	Serial.println("in setup");
+	//Serial.println("in setup");
 
 	//Startup radio and temperature sensors
 	radio.begin();
@@ -72,16 +72,16 @@ void setup()
 	//radio.startListening();
 
 	///Debug StuffVVV
-	Serial.print("Ping status: ");
-	Serial.println(pingStatus);
+	//Serial.print("Ping status: ");
+	//Serial.println(pingStatus);
 
-	Serial.println("/////////////////////");
-	Serial.print("My Address: ");
-	Serial.println(MY_ADDRESS);
-	Serial.println("Read Range:");
+	//Serial.println("/////////////////////");
+	//Serial.print("My Address: ");
+	//Serial.println(MY_ADDRESS);
+	//Serial.println("Read Range:");
 	for (int i = 0; i <= 4; i++)
 	{
-		Serial.println(RANGE[i]);
+		//Serial.println(RANGE[i]);
 	}
 }
 
@@ -89,9 +89,9 @@ void loop()
 {
 	String request;
 
-	Serial.println("VVVV");
-	//Serial.println(codedMessage2);
-	Serial.println("___________________");
+	//Serial.println("VVVV");
+	////Serial.println(codedMessage2);
+	//Serial.println("___________________");
 
 	while (true)
 	{
@@ -106,20 +106,20 @@ void loop()
 			{
 				if (mainRadio.requestData(9002))
 				{
-					Serial.println("9002:");
+					//Serial.println("9002:");
 					mainRadio.receiveData();
-					Serial.println("___________________");
-					Serial.println(" ");
+					//Serial.println("___________________");
+					//Serial.println(" ");
 				}
 			}
 			else if (request == "9003")
 			{
 				if (mainRadio.requestData(9003))
 				{
-					Serial.println("9003:");
+					//Serial.println("9003:");
 					mainRadio.receiveData();
-					Serial.println("___________________");
-					Serial.println(" ");
+					//Serial.println("___________________");
+					//Serial.println(" ");
 				}
 			}
 		}
@@ -127,7 +127,8 @@ void loop()
 		{
 			mainRadio.waitForRequest();
 
-			mainRadio.sendData(((dht.readTemperature() * 1.8) + 32), 5, MY_ADDRESS, 9001);
+			mainRadio.sendData(dht.convertCtoF(dht.readTemperature()), 5, MY_ADDRESS, 9001);
+			
 		}
 
 		request = "";
