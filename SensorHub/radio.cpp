@@ -191,10 +191,6 @@ bool Radio::startupPings()
 	return pingsSuccess;
 }
 
-
-
-
-
 String Radio::encodeMessage(float temperature, int motion, int fromAddress)
 {
 	/*
@@ -254,6 +250,10 @@ String Radio::encodeMessage(float temperature, int motion, int fromAddress)
 
 	return messageToReturn;
 }
+
+
+
+
 
 bool Radio::decodeMessage(float &temperature, int &motion, int &fromAddress, const String &codedMessage)
 {

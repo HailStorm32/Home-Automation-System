@@ -1,3 +1,12 @@
+//**********************************************************************************************//
+//																								//
+//					This code by Demetrius Van Sickle is licensed under a						//
+//				Creative Commons Attribution-NonCommercial 4.0 International License.			//
+//																								//
+//					Credit to Tom Archer & Rick Leinecker for the Serial class					//
+//								Source site: https://goo.gl/KftQEJ								//
+//																							    //
+//**********************************************************************************************//
 #include "Hub.h"
 
 Hub::Hub(int comPort)
@@ -15,22 +24,37 @@ Hub::Hub(int comPort)
 
 Hub::~Hub()
 {
+	serial.Close();
 }
 
-
-void Hub::begin()
+bool Hub::begin(bool withPings)
 {
 	if (serial.Open(comPort, 9600))
 	{
 		cout << "Opened!" << endl;
 
-		cout << "Waiting for hub to startup..." << endl;
-		Sleep(startupWaitTime);
+		if (withPings)
+		{
+			Sleep(2000);
+			serial.SendData("true", 4);//Tell hub it should do the startup pings
+			cout << "Waiting for hub to startup..." << endl;
+			Sleep(startupWaitTime);
+		}
+		else
+		{
+			Sleep(2000);
+			serial.SendData("false", 5);//Tell hub it should do the startup pings
+			cout << "Waiting for hub to startup..." << endl;
+			Sleep(2000);
+		}
+
 		cout << "Done!\n\n\n\n";
+		return true;
 	}
 	else
 	{
 		cout << "Failed!" << endl;
+		return false;
 	}
 }
 
@@ -122,7 +146,19 @@ void Hub::storeData(string codedData)
 
 bool Hub::restart()
 {
-	return false;
+	serial.Close();
+
+	if (serial.Open(comPort, 9600))
+	{
+		Sleep(2000);
+		serial.SendData("false", 5);
+		Sleep(2000);
+		return true;
+	}
+	else
+	{
+		return false;
+	}
 }
 
 bool Hub::isValidData(const string & codedData)

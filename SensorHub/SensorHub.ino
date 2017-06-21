@@ -55,7 +55,49 @@ void setup()
 
 	digitalWrite(DEBUG_LED, HIGH); //Show that we have entered the "setup" stage
 
-	pingStatus = mainRadio.startupPings();
+	int targetTime = millis() + 2000;
+	bool doPings = true;
+	bool dataRecived = false;
+	String request = "";
+
+	Serial.flush();
+
+	//Get info from the command center on if we should do pings
+	while(!dataRecived)
+	{
+		//We have gone 2sec with no instructions from the command center, do pings anyway
+		if (millis() >= targetTime)
+		{
+			//digitalWrite(ERROR_LED, HIGH);
+			doPings = true;
+			dataRecived = false;
+			break;
+		}
+
+		if (Serial.available() > 0)
+		{
+			request = Serial.readString();
+			
+			if (request == "true")
+			{
+				doPings = true;
+			}
+			else if (request == "false")
+			{
+				doPings = false;
+			}
+			dataRecived = true;
+		}
+	}
+
+	if (doPings)
+	{
+		pingStatus = mainRadio.startupPings();
+	}
+	else
+	{
+		pingStatus = false;
+	}
 
 	digitalWrite(DEBUG_LED, LOW); //Show that we have exited the "setup" stage
 
@@ -97,13 +139,18 @@ void loop()
 	{
 		if (MY_ADDRESS == 9001)
 		{
-			while (Serial.available() > 0)
+			if (Serial.available() > 0)
 			{
 				request = Serial.readString();
 			}
 
-			if (request == "9002")
+			switch (atoi(request.c_str()))
 			{
+			case 9001:
+				Serial.print(mainRadio.encodeMessage(dht.convertCtoF(dht.readTemperature()), 4, MY_ADDRESS));
+
+				return;
+			case 9002:
 				if (mainRadio.requestData(9002))
 				{
 					//Serial.println("9002:");
@@ -111,9 +158,8 @@ void loop()
 					//Serial.println("___________________");
 					//Serial.println(" ");
 				}
-			}
-			else if (request == "9003")
-			{
+				return;
+			case 9003:
 				if (mainRadio.requestData(9003))
 				{
 					//Serial.println("9003:");
@@ -121,8 +167,10 @@ void loop()
 					//Serial.println("___________________");
 					//Serial.println(" ");
 				}
+				return;
 			}
 		}
+		//IF not master hub
 		else
 		{
 			mainRadio.waitForRequest();

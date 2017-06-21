@@ -67,6 +67,15 @@ public:
 	*/
 	bool startupPings();
 
+	/*
+	Input:
+		temperature -- 0.0-999.9
+		motion -- 0-9999
+		fromAddress -- 9001-9008
+	Returns:
+		NONE
+	*/
+	String encodeMessage(float temperature, int motion, int fromAddress);
 
 
 private:
@@ -78,15 +87,6 @@ private:
 	int range[RANGE_SIZE];
 	int myAddress;
 
-	/*
-	Input:
-		temperature -- 0.0-999.9
-		motion -- 0-9999
-		fromAddress -- 9001-9008
-	Returns:
-		NONE
-	*/
-	String encodeMessage(float temperature, int motion, int fromAddress);
 
 	/*
 	Input:

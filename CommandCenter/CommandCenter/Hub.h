@@ -1,3 +1,12 @@
+//**********************************************************************************************//
+//																								//
+//					This code by Demetrius Van Sickle is licensed under a						//
+//				Creative Commons Attribution-NonCommercial 4.0 International License.			//
+//																								//
+//					Credit to Tom Archer & Rick Leinecker for the Serial class					//
+//								Source site: https://goo.gl/KftQEJ								//
+//																							    //
+//**********************************************************************************************//
 #pragma once
 
 #include <string>
@@ -8,7 +17,7 @@
 
 using namespace std;
 
-const int startupWaitTime = 10000; //How long it takes the hub to startup
+const int startupWaitTime = 13000; //How long it takes the hub to startup
 const int MESSAGE_SIZE = 17;
 const int NUM_OF_FILES = 3;
 const string FILE_NAME[NUM_OF_FILES] = { "Log_9001.csv", "Log_9002.csv", "Log_9003.csv" }; //only have three right now, but will have a total of 8 later
@@ -24,8 +33,11 @@ public:
 	/*
 	Description:
 		Make a COM conection to the first hub
+	Return:
+		True -- made connection
+		False -- no connection
 	*/
-	void begin();
+	bool begin(bool withPings = true);
 
 	/*
 	Input:
@@ -66,8 +78,6 @@ private:
 	fstream file;
 
 	int comPort;
-	int lineBegin[8];
-	int lineEnd[8];
 
 	/*
 	Input:

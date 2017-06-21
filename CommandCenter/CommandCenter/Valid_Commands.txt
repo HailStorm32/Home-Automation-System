@@ -1,0 +1,6 @@
+9001 -- Get data from this hub<>
+9002 -- Get data from this hub<>
+9003 -- Get data from this hub<>
+quit -- Quit the Command Center<>
+help -- Print the list of commands<>
+restart -- Restart the master hub<>
