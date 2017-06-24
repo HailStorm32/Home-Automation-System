@@ -14,12 +14,14 @@
 #include <fstream>
 #include <assert.h>
 #include "serial.h" 
+#include "SysTime.h"
 
 using namespace std;
 
 const int startupWaitTime = 13000; //How long it takes the hub to startup
 const int MESSAGE_SIZE = 17;
 const int NUM_OF_FILES = 3;
+const int MAX_NUM_OF_RETRIES = 4;
 const string FILE_NAME[NUM_OF_FILES] = { "Log_9001.csv", "Log_9002.csv", "Log_9003.csv" }; //only have three right now, but will have a total of 8 later
 
 class Hub
@@ -76,8 +78,10 @@ public:
 private:
 	CSerial serial;
 	fstream file;
+	SysTime clock;
 
 	int comPort;
+	int numOfRetries;
 
 	/*
 	Input:

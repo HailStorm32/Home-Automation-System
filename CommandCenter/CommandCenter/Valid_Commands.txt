@@ -4,3 +4,4 @@
 quit -- Quit the Command Center<>
 help -- Print the list of commands<>
 restart -- Restart the master hub<>
+auto -- Automatically request and store data from all hubs at timed intervals<>

@@ -145,11 +145,13 @@
     <ClCompile Include="Hub.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="Serial.cpp" />
+    <ClCompile Include="SysTime.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Hub.h" />
     <ClInclude Include="Serial.h" />
     <ClInclude Include="stdafx.h" />
+    <ClInclude Include="SysTime.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

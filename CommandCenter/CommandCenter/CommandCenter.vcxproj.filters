@@ -24,6 +24,9 @@
     <ClCompile Include="Hub.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="SysTime.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Serial.h">
@@ -33,6 +36,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Hub.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SysTime.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

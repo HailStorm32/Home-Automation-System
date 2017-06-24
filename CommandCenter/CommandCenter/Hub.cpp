@@ -12,6 +12,7 @@
 Hub::Hub(int comPort)
 {
 	this->comPort = comPort;
+	numOfRetries = 0;
 
 	//Setup the files
 	for (int indx = 0; indx < NUM_OF_FILES; indx++)
@@ -83,8 +84,38 @@ string Hub::requestData(int hubAddress)
 		return "ERROR";
 	}
 
-	cout << "\n\nWaiting for response..." << endl;
-	while (serial.ReadDataWaiting() <= 0){}
+	cout << "\n\nWaiting for response[" << requestToSend << "]..." << endl;
+	//cout << "\n\nWaiting for response..." << endl;
+
+	clock.startTimer(4);
+
+	while (serial.ReadDataWaiting() <= 0 && !clock.timerPassed()){}
+
+	//If it took to long to get a response
+	if (clock.timerPassed())
+	{
+		clock.stopTimer();
+		cout << "Took to long..." << endl;
+		cout << "restarting..." << endl;
+
+		restart();
+
+		//Make we haven't retried to many times, and then try again
+		if (numOfRetries < MAX_NUM_OF_RETRIES)
+		{
+			cout << "Requesting again..." << endl;
+			numOfRetries++;
+			return requestData(hubAddress);
+		}
+		else
+		{
+			numOfRetries = 0;
+			return (requestToSend += "-0-0x");
+		}
+	}
+
+	clock.stopTimer();
+	numOfRetries = 0;
 
 	serial.ReadData(codedData, MESSAGE_SIZE);
 
@@ -119,7 +150,6 @@ void Hub::storeData(string codedData)
 	int pos = 0;
 	char holder = ' ';
 
-
 	//Only continue if the data can be decoded
 	if (!decodeData(temperature, motion, fromAddress, codedData))
 	{
@@ -139,7 +169,7 @@ void Hub::storeData(string codedData)
 	pos = file.tellp();
 	file.seekp(pos-1);
 
-	file << "02:35, " << temperature << ", " << motion << ",\nZ";
+	file << clock.getTime() << ", " << temperature << ", " << motion << ",\nZ";
 
 	file.close();
 }

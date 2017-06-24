@@ -175,7 +175,7 @@ void loop()
 		{
 			mainRadio.waitForRequest();
 
-			mainRadio.sendData(dht.convertCtoF(dht.readTemperature()), 5, MY_ADDRESS, 9001);
+			mainRadio.sendData(dht.convertCtoF(dht.readTemperature()), 4, MY_ADDRESS, 9001);
 			
 		}
 

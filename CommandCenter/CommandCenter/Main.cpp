@@ -9,6 +9,7 @@
 //**********************************************************************************************//
 #include <cstring>
 #include "Hub.h"
+#include "SysTime.h"
 
 using namespace std;
 
@@ -16,6 +17,7 @@ const unsigned int COM_PORT = 4;
 
 fstream file;
 const string COMMANDS_FILE = "Valid_Commands.txt";
+const long AUTO_DELAY_TIME = 1800000; //Time between samples when in automode (in milli sec) CURRENT -> 30min
 
 bool isValidCommand(string command);
 void runCommand(string command, Hub &masterHub);
@@ -106,6 +108,7 @@ void runCommand(string command, Hub &masterHub)
 	string lineOfText;
 	int indx = 0;
 	int commandNum = 0;
+	SysTime clk;
 
 	if (command == "9001" || command == "9002" || command == "9003")
 	{
@@ -144,5 +147,25 @@ void runCommand(string command, Hub &masterHub)
 	else if (command == "restart")
 	{
 		masterHub.restart();
+	}
+	else if (command == "auto")
+	{
+		cout << "\n\n\n\nStarting auto sampling. Close program to quit." << endl;
+		
+		while (true)
+		{
+			codedData = masterHub.requestData(9001);
+			masterHub.storeData(codedData);
+			Sleep(1000);
+			codedData = masterHub.requestData(9002);
+			masterHub.storeData(codedData);
+			Sleep(1000);
+			codedData = masterHub.requestData(9003);
+			masterHub.storeData(codedData);
+			Sleep(1000);
+
+			cout << "\n\n\n[" << clk.getTime() << "]Sleeping..." << endl;
+			Sleep(AUTO_DELAY_TIME);
+		}
 	}
 }
