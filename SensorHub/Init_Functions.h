@@ -33,7 +33,7 @@ int setAddress()
 	bool B = digitalRead(SWITCH_IN_2);
 	bool C = digitalRead(SWITCH_IN_3);
 	
-	//Serial.println("01");//Debug only
+	Serial.println("01");//Debug only
 	
 	if (A == false && B == false && C == false)
 	{
@@ -91,7 +91,7 @@ int setAddress()
 //=========================================================================
 int giveRange(int choice, int MY_ADDRESS)
 {
-	//Serial.println("02");
+	Serial.println("02");
 	switch (choice)
 	{
 	case 1:

@@ -38,7 +38,7 @@ void setup()
 {
 	Serial.begin(9600);
 
-	//Serial.println("in setup");
+	Serial.println("in setup");
 
 	//Startup radio and temperature sensors
 	radio.begin();
@@ -54,6 +54,13 @@ void setup()
 	pinMode(DEBUG_LED, OUTPUT);
 
 	digitalWrite(DEBUG_LED, HIGH); //Show that we have entered the "setup" stage
+
+	radio.setPALevel(RF24_PA_MAX);
+	if (!radio.setDataRate(RF24_250KBPS))
+	{
+		Serial.println("FAILED TO SET DATA RATE!!!");
+	}
+	radio.setChannel(124); 
 
 	int targetTime = millis() + 2000;
 	bool doPings = true;
@@ -114,16 +121,16 @@ void setup()
 	//radio.startListening();
 
 	///Debug StuffVVV
-	//Serial.print("Ping status: ");
-	//Serial.println(pingStatus);
+	Serial.print("Ping status: ");
+	Serial.println(pingStatus);
 
-	//Serial.println("/////////////////////");
-	//Serial.print("My Address: ");
-	//Serial.println(MY_ADDRESS);
-	//Serial.println("Read Range:");
+	Serial.println("/////////////////////");
+	Serial.print("My Address: ");
+	Serial.println(MY_ADDRESS);
+	Serial.println("Read Range:");
 	for (int i = 0; i <= 4; i++)
 	{
-		//Serial.println(RANGE[i]);
+		Serial.println(RANGE[i]);
 	}
 }
 
@@ -131,9 +138,9 @@ void loop()
 {
 	String request;
 
-	//Serial.println("VVVV");
-	////Serial.println(codedMessage2);
-	//Serial.println("___________________");
+	Serial.println("VVVV");
+	//Serial.println(codedMessage2);
+	Serial.println("___________________");
 
 	while (true)
 	{
@@ -153,19 +160,19 @@ void loop()
 			case 9002:
 				if (mainRadio.requestData(9002))
 				{
-					//Serial.println("9002:");
+					Serial.println("9002:");
 					mainRadio.receiveData();
-					//Serial.println("___________________");
-					//Serial.println(" ");
+					Serial.println("___________________");
+					Serial.println(" ");
 				}
 				return;
 			case 9003:
 				if (mainRadio.requestData(9003))
 				{
-					//Serial.println("9003:");
+					Serial.println("9003:");
 					mainRadio.receiveData();
-					//Serial.println("___________________");
-					//Serial.println(" ");
+					Serial.println("___________________");
+					Serial.println(" ");
 				}
 				return;
 			}

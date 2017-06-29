@@ -49,14 +49,14 @@ bool Radio::sendData(float temperature, int motion, int fromAddress, int toAddre
 
 	if (radioP->write(codedMessage.c_str(), MESSAGE_SIZE))
 	{
-		//Serial.println("true");
+		Serial.println("true");
 		digitalWrite(DEBUG_LED, LOW);
 		radioP->txStandBy();
 		return true;
 	}
 	else
 	{
-		/////Serial.println("Error Sending...");
+		///Serial.println("Error Sending...");
 		systemP->errorReport(3, toAddress);
 		digitalWrite(DEBUG_LED, LOW);
 		return false;
@@ -76,7 +76,7 @@ bool Radio::receiveData()
 	radioP->startListening();
 
 	waitForData(-1);
-	////Serial.println(sizeof(codedMessageCStr));
+	//Serial.println(sizeof(codedMessageCStr));
 	radioP->read(codedMessageCStr, MESSAGE_SIZE);
 
 	codedMessage = codedMessageCStr;
@@ -89,9 +89,9 @@ bool Radio::receiveData()
 
 	Serial.print(codedMessage);//Send to the command center
 
-	//Serial.println(temp);
-	//Serial.println(motion);
-	//Serial.println(fromAddress);
+	Serial.println(temp);
+	Serial.println(motion);
+	Serial.println(fromAddress);
 
 	return true;
 }
@@ -144,9 +144,9 @@ bool Radio::waitForRequest()
 	radioP->openReadingPipe(0, myAddress); //must be set to receiver's address. Will only receive data from hubs that have opened writing pipes to this address
 	radioP->startListening();
 
-	//Serial.println("Waitng for request...");
+	Serial.println("Waitng for request...");
 	waitForData(-1);
-	//Serial.println("Got...");
+	Serial.println("Got...");
 
 	radioP->read(typeOfRequest, sizeof(typeOfRequest));
 
@@ -176,15 +176,15 @@ bool Radio::startupPings()
 
 			if (sendPing(i) == true && receiveAcknowledge(i) == true)
 			{
-				//Serial.println("Successful contact with hub ");//debug only
-				//Serial.println(debug);//debug only
+				Serial.println("Successful contact with hub ");//debug only
+				Serial.println(debug);//debug only
 			}
 		}
 
 	}
 	else
 	{
-		//Serial.println("Waiting for pings...");//debug only
+		Serial.println("Waiting for pings...");//debug only
 		pingsSuccess = receivePing();
 	}
 
@@ -246,7 +246,7 @@ String Radio::encodeMessage(float temperature, int motion, int fromAddress)
 
 	messageToReturn = message;
 
-	////Serial.println(message);//debug only
+	//Serial.println(message);//debug only
 
 	return messageToReturn;
 }
@@ -274,13 +274,13 @@ bool Radio::decodeMessage(float &temperature, int &motion, int &fromAddress, con
 	//Get fromAddress data
 	while (message[indx] != '-')
 	{
-		////Serial.println(message[indx]);
+		//Serial.println(message[indx]);
 		stringHolder += message[indx];
 		indx++;
 	}
 
 	fromAddress = atoi(stringHolder.c_str()); //Convert string into int
-	////Serial.println(fromAddress);//debug only
+	//Serial.println(fromAddress);//debug only
 	indx++;
 
 	stringHolder = "";
@@ -324,7 +324,7 @@ bool Radio::waitForData(int waitTime)
 
 		if (millis() > targetTime)
 		{
-			////Serial.println("ERROR! timeout!");//debug only
+			//Serial.println("ERROR! timeout!");//debug only
 			systemP->errorReport(10);
 			return false;
 		}
@@ -380,12 +380,12 @@ bool Radio::receivePing()
 
 		if (radioP->available())
 		{
-			//Serial.println("Receiving Data..."); //debug only
+			Serial.println("Receiving Data..."); //debug only
 			radioP->read(&toAddress, sizeof(toAddress));
 		}
 		else if (millis() > targetTime)
 		{
-			////Serial.println("ERROR!!!");
+			//Serial.println("ERROR!!!");
 			systemP->errorReport(9);
 		}
 
@@ -399,7 +399,7 @@ bool Radio::receivePing()
 		}
 		else if (millis() > targetTime)
 		{
-			////Serial.println("ERROR!!!");
+			//Serial.println("ERROR!!!");
 			systemP->errorReport(9);
 		}
 
@@ -409,7 +409,7 @@ bool Radio::receivePing()
 			radioP->stopListening();
 			radioP->openWritingPipe(range[0]);
 
-			//Serial.println("Sending Ping back..."); //debug only
+			Serial.println("Sending Ping back..."); //debug only
 
 			if (radioP->write(&myAddress, sizeof(myAddress)))
 			{
@@ -417,7 +417,7 @@ bool Radio::receivePing()
 			}
 			else
 			{
-				//Serial.println("ERROR!!!");
+				Serial.println("ERROR!!!");
 				systemP->errorReport(3, range[0]);
 			}
 		}
@@ -432,8 +432,8 @@ bool Radio::sendPing(int index)
 	int toAddress = 0;
 	int targetTime = 0;
 
-	//Serial.println(" ");//debug only
-	//Serial.println("Sending pings...");//debug only
+	Serial.println(" ");//debug only
+	Serial.println("Sending pings...");//debug only
 
 	radioP->stopListening();
 	radioP->openWritingPipe(range[index]);
@@ -444,7 +444,7 @@ bool Radio::sendPing(int index)
 
 	if (!radioP->write(&toAddress, sizeof(toAddress)))
 	{
-		////Serial.println("ERROR!!!");
+		//Serial.println("ERROR!!!");
 		systemP->errorReport(3, toAddress);
 		return false;
 	}
@@ -454,7 +454,7 @@ bool Radio::sendPing(int index)
 	//\\\\\\\\\\\\\\\\\\\\\\\\ Send "from address" ////////////////////////
 	if (!radioP->write(&myAddress, sizeof(myAddress)))
 	{
-		////Serial.println("ERROR!!!");
+		//Serial.println("ERROR!!!");
 		systemP->errorReport(3, toAddress);
 		return false;
 	}
@@ -483,19 +483,19 @@ bool Radio::receiveAcknowledge(int index)
 
 		if (data == acknowledgerAddress)
 		{
-			//Serial.println("Received acknowledge...");//debug only
+			Serial.println("Received acknowledge...");//debug only
 			didAcknowledge = true;
 		}
 		else
 		{
-			////Serial.println("ERROR!!! Incorrect acknowledgement ping recieved");
+			//Serial.println("ERROR!!! Incorrect acknowledgement ping recieved");
 			systemP->errorReport(8, acknowledgerAddress); //Report that we got the wrong data back
 			didAcknowledge = false;
 		}
 	}
 	else if (millis() > targetTime)///we went over time, report it
 	{
-		////Serial.println("ERROR!!! No acknowledgement ping recieved");
+		//Serial.println("ERROR!!! No acknowledgement ping recieved");
 		systemP->errorReport(7, acknowledgerAddress);
 		didAcknowledge = false;
 	}
