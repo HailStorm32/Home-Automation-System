@@ -11,6 +11,8 @@
 #include "constants.h"
 #include "hub.h"
 
+const unsigned int MAX_NUM_OF_RETRIES = 2;
+
 class Radio
 {
 public:
@@ -86,6 +88,7 @@ private:
 	Hub * systemP;
 	int range[RANGE_SIZE];
 	int myAddress;
+	unsigned int numOfRetries;
 
 
 	/*

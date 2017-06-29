@@ -26,6 +26,7 @@ Radio::Radio(const int myAddress, const int range[], RF24* radioPointer, Hub* sy
 	//Set variables
 	this->myAddress = myAddress;
 	fromAddress = myAddress;
+	numOfRetries = 0;
 
 	for (int indx = 0; indx < RANGE_SIZE; indx++)
 	{
@@ -52,14 +53,24 @@ bool Radio::sendData(float temperature, int motion, int fromAddress, int toAddre
 		Serial.println("true");
 		digitalWrite(DEBUG_LED, LOW);
 		radioP->txStandBy();
+		numOfRetries = 0;
 		return true;
 	}
 	else
 	{
-		///Serial.println("Error Sending...");
-		systemP->errorReport(3, toAddress);
-		digitalWrite(DEBUG_LED, LOW);
-		return false;
+		if (numOfRetries < MAX_NUM_OF_RETRIES)
+		{
+			Serial.println("Trying again...");
+			numOfRetries++;
+			sendData(temperature, motion, fromAddress, toAddress);
+		}
+		else
+		{
+			systemP->errorReport(3, toAddress);
+			digitalWrite(DEBUG_LED, LOW);
+			numOfRetries = 0;
+			return false;
+		}
 	}
 }
 
