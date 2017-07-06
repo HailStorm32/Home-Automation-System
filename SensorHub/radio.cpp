@@ -62,6 +62,7 @@ bool Radio::sendData(float temperature, int motion, int fromAddress, int toAddre
 		{
 			Serial.println("Trying again...");
 			numOfRetries++;
+			delay(500);
 			sendData(temperature, motion, fromAddress, toAddress);
 		}
 		else
@@ -110,48 +111,42 @@ bool Radio::receiveData()
 bool Radio::requestData(int toAddress)
 {
 	//long targetTime = 0;
-	
+
 	radioP->stopListening();
 	radioP->openWritingPipe(toAddress);
 
 	digitalWrite(DEBUG_LED, HIGH);
 
-	/*targetTime = millis() + 500;
-	while(radioP->write("S", sizeof("S")) != true && millis() < targetTime){}
-
-	if (millis() > targetTime)
-	{
-		digitalWrite(DEBUG_LED, LOW);
-		systemP->errorReport(10);
-		systemP->errorReport(3, toAddress);
-		return false;
-	}
-	else
-	{
-		digitalWrite(DEBUG_LED, LOW);
-		radioP->txStandBy();
-		return true;
-	}*/
-	
-	
 	if (radioP->write("S", sizeof("S")))
 	{
 		digitalWrite(DEBUG_LED, LOW);
 		radioP->txStandBy();
+		numOfRetries = 0;
 		return true;
 	}
 	else
 	{
-		systemP->errorReport(3, toAddress);
-		digitalWrite(DEBUG_LED, LOW);
-		return false;
+		if (numOfRetries < MAX_NUM_OF_RETRIES)
+		{
+			Serial.println("Trying request again...");
+			numOfRetries++;
+			delay(500);
+			requestData(toAddress);
+		}
+		else
+		{
+			systemP->errorReport(3, toAddress);
+			digitalWrite(DEBUG_LED, LOW);
+			numOfRetries = 0;
+			return false;
+		}
 	}
 }
 
 bool Radio::waitForRequest()
 {
 	char typeOfRequest[1];
-	
+
 	radioP->openReadingPipe(0, myAddress); //must be set to receiver's address. Will only receive data from hubs that have opened writing pipes to this address
 	radioP->startListening();
 
@@ -324,19 +319,22 @@ bool Radio::decodeMessage(float &temperature, int &motion, int &fromAddress, con
 	return true;
 }
 
-bool Radio::waitForData(int waitTime)
+bool Radio::waitForData(int milliSec, bool printError)
 {
 	int targetTime = 0;
 
-	if (waitTime >= 0)
+	if (milliSec >= 0)
 	{
-		targetTime = millis() + waitTime;
+		targetTime = millis() + milliSec;
 		while (!radioP->available() && millis() < targetTime) {}
 
 		if (millis() > targetTime)
 		{
-			//Serial.println("ERROR! timeout!");//debug only
-			systemP->errorReport(10);
+			//Only print the error if we are told to
+			if (printError = true)
+			{
+				systemP->errorReport(10);
+			}
 			return false;
 		}
 	}
@@ -386,31 +384,32 @@ bool Radio::receivePing()
 	do
 	{
 		//\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ Receive the "toAddress" //////////////////////////
-		targetTime = millis() + 30000;
-		while (!radioP->available() && millis() < targetTime) {} //Wait until there is a message to read, but dont wait longer than 30sec
+		//targetTime = millis() + 30000;
+		//while (!radioP->available() && millis() < targetTime) {} //Wait until there is a message to read, but dont wait longer than 30sec
+		//waitForData(-1);
 
-		if (radioP->available())
+		if (waitForData(-1))
 		{
 			Serial.println("Receiving Data..."); //debug only
 			radioP->read(&toAddress, sizeof(toAddress));
 		}
-		else if (millis() > targetTime)
+		/*else if (millis() > targetTime)
 		{
 			//Serial.println("ERROR!!!");
 			systemP->errorReport(9);
-		}
+		}*/
 
 		//\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ Receive the "fromAddress" //////////////////////////
-		targetTime = millis() + 30000;
-		while (!radioP->available() && millis() < targetTime) {} //Wait until there is a message to read, but dont wait longer than 30sec
+		//targetTime = millis() + 30000;
+		//while (!radioP->available() && millis() < targetTime) {} //Wait until there is a message to read, but dont wait longer than 30sec
+		//waitForData(30000);
 
-		if (radioP->available())
+		if (waitForData(30000, false))
 		{
 			radioP->read(&fromAddress, sizeof(fromAddress));
 		}
-		else if (millis() > targetTime)
+		else
 		{
-			//Serial.println("ERROR!!!");
 			systemP->errorReport(9);
 		}
 
@@ -428,7 +427,7 @@ bool Radio::receivePing()
 			}
 			else
 			{
-				Serial.println("ERROR!!!");
+				//Serial.println("ERROR!!!");
 				systemP->errorReport(3, range[0]);
 			}
 		}
@@ -484,9 +483,11 @@ bool Radio::receiveAcknowledge(int index)
 	radioP->openReadingPipe(1, myAddress);
 	radioP->startListening();
 
-	targetTime = millis() + 1000;
+	//targetTime = millis() + 1000;
 
-	while (!radioP->available() && millis() < targetTime) {} //Wait until there is a message to read, but dont wait longer than 1sec
+	waitForData(1000);
+
+	//while (!radioP->available() && millis() < targetTime) {} //Wait until there is a message to read, but dont wait longer than 1sec
 
 	if (radioP->available())
 	{

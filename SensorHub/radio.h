@@ -11,8 +11,6 @@
 #include "constants.h"
 #include "hub.h"
 
-const unsigned int MAX_NUM_OF_RETRIES = 2;
-
 class Radio
 {
 public:
@@ -111,7 +109,7 @@ private:
 		True -- there was data to read with in the specified time
 		False -- there was NO data to read with in the specified time
 	*/
-	bool waitForData(int waitTime);
+	bool waitForData(int milliSec, bool printError = true);
 
 	/*
 	Input:

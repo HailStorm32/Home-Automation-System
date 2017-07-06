@@ -28,3 +28,5 @@ const int READ_CYCLE = 3500;  //Time between reading the temp sensor (in millise
 
 const unsigned int MESSAGE_SIZE = 17;
 const unsigned int RANGE_SIZE = 5;
+
+const unsigned int MAX_NUM_OF_RETRIES = 4;
