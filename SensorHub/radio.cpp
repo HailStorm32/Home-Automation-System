@@ -441,6 +441,8 @@ bool Radio::sendPing(int index)
 {
 	int toAddress = 0;
 	int targetTime = 0;
+	bool didSend = false;
+	numOfRetries = 0;
 
 	Serial.println(" ");//debug only
 	Serial.println("Sending pings...");//debug only
@@ -454,21 +456,51 @@ bool Radio::sendPing(int index)
 
 	if (!radioP->write(&toAddress, sizeof(toAddress)))
 	{
-		//Serial.println("ERROR!!!");
-		systemP->errorReport(3, toAddress);
-		return false;
+		while (numOfRetries < MAX_NUM_OF_RETRIES)
+		{
+			if (radioP->write(&toAddress, sizeof(toAddress)))
+			{
+				didSend = true;
+				numOfRetries = 0;
+				break;
+			}
+			delay(300);
+			numOfRetries++;
+		}
+		
+		if (didSend == false && numOfRetries)
+		{
+			systemP->errorReport(3, toAddress);
+			numOfRetries = 0;
+			return false;
+		}
 	}
 
+	didSend = false;
 	delay(200);
 
 	//\\\\\\\\\\\\\\\\\\\\\\\\ Send "from address" ////////////////////////
 	if (!radioP->write(&myAddress, sizeof(myAddress)))
 	{
-		//Serial.println("ERROR!!!");
-		systemP->errorReport(3, toAddress);
-		return false;
-	}
+		while (numOfRetries < MAX_NUM_OF_RETRIES)
+		{
+			if (radioP->write(&myAddress, sizeof(myAddress)))
+			{
+				didSend = true;
+				numOfRetries = 0;
+				break;
+			}
+			delay(300);
+			numOfRetries++;
+		}
 
+		if (didSend == false)
+		{
+			systemP->errorReport(3, toAddress);
+			numOfRetries = 0;
+			return false;
+		}
+	}
 
 	return true;
 }

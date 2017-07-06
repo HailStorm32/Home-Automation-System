@@ -108,18 +108,6 @@ void setup()
 
 	digitalWrite(DEBUG_LED, LOW); //Show that we have exited the "setup" stage
 
-	//radio.setRetries(15, 15);
-
-
-	//radio.openReadingPipe(0, 9001);
-	//radio.openReadingPipe(1, RANGE[1]);
-	//radio.openReadingPipe(2, RANGE[2]);
-	//radio.openReadingPipe(3, RANGE[3]);
-	//radio.openReadingPipe(4, RANGE[4]);
-	//radio.openReadingPipe(5, RANGE[5]);
-
-	//radio.startListening();
-
 	///Debug StuffVVV
 	Serial.print("Ping status: ");
 	Serial.println(pingStatus);
