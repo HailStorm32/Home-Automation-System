@@ -93,7 +93,7 @@ private:
 		True -- decoded successfully
 		False -- NOT decoded successfully
 	*/
-	bool decodeData(float &temperature, int &motion, int &fromAddress, const string &codedData);
+	bool decodeData(float &temperature, int &motion, int &fromAddress, int &toAddress, const string &codedData);
 
 	/*
 	Input:

@@ -130,6 +130,11 @@ void loop()
 	//Serial.println(codedMessage2);
 	Serial.println("___________________");
 
+	float temperature = 0;
+	int motion = 0;
+	int fromAddress = 0;
+	int toAddress = 0;
+
 	while (true)
 	{
 		if (MY_ADDRESS == 9001)
@@ -142,7 +147,7 @@ void loop()
 			switch (atoi(request.c_str()))
 			{
 			case 9001:
-				Serial.print(mainRadio.encodeMessage(dht.convertCtoF(dht.readTemperature()), 4, MY_ADDRESS));
+				Serial.print(mainRadio.encodeMessage(dht.convertCtoF(dht.readTemperature()), 4, MY_ADDRESS, 9001));
 
 				return;
 			case 9002:

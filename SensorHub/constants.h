@@ -26,7 +26,7 @@ const int BASE_CYCLE_TIME = 6000; //Time between data transmissions (in millisec
 const int READ_CYCLE = 3500;  //Time between reading the temp sensor (in milliseconds)  1000 = 1sec
 
 
-const unsigned int MESSAGE_SIZE = 17;
+const unsigned int MESSAGE_SIZE = 20;
 const unsigned int RANGE_SIZE = 5;
 
 const unsigned int MAX_NUM_OF_RETRIES = 4;

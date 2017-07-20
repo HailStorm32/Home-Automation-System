@@ -215,7 +215,7 @@ bool Hub::isValidData(const string & codedData)
 	}
 }
 
-bool Hub::decodeData(float & temperature, int & motion, int & fromAddress, const string & codedData)
+bool Hub::decodeData(float & temperature, int & motion, int & fromAddress, int &toAddress, const string & codedData)
 {
 	string stringHolder;
 	char message[MESSAGE_SIZE];
@@ -263,7 +263,7 @@ bool Hub::decodeData(float & temperature, int & motion, int & fromAddress, const
 	stringHolder = "";
 
 	//Get motion data
-	while (message[indx] != 'x')
+	while (message[indx] != '-')
 	{
 		stringHolder += message[indx];
 		indx++;
@@ -271,6 +271,18 @@ bool Hub::decodeData(float & temperature, int & motion, int & fromAddress, const
 	}
 
 	motion = atoi(stringHolder.c_str()); //Convert string into int
+
+	indx++;
+	stringHolder = "";
+
+	//Get toAddress data
+	while (message[indx] != 'x')
+	{
+		stringHolder += message[indx];
+		indx++;
+	}
+
+	toAddress = atoi(stringHolder.c_str());
 
 	return true;
 }

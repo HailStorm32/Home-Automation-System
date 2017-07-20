@@ -39,7 +39,7 @@ bool Radio::sendData(float temperature, int motion, int fromAddress, int toAddre
 	String codedMessage;
 
 	//Pack the data into a single string
-	codedMessage = encodeMessage(temperature, motion, fromAddress);
+	codedMessage = encodeMessage(temperature, motion, fromAddress, toAddress);
 
 	digitalWrite(DEBUG_LED, HIGH);
 
@@ -56,6 +56,7 @@ bool Radio::sendData(float temperature, int motion, int fromAddress, int toAddre
 		numOfRetries = 0;
 		return true;
 	}
+	//If sending failed, retry up to 4 times
 	else
 	{
 		if (numOfRetries < MAX_NUM_OF_RETRIES)
@@ -65,8 +66,17 @@ bool Radio::sendData(float temperature, int motion, int fromAddress, int toAddre
 			delay(500);
 			sendData(temperature, motion, fromAddress, toAddress);
 		}
-		else
+		else if (numOfRetries >= MAX_NUM_OF_RETRIES)
 		{
+			/*if (MY_ADDRESS != 9001)
+			{
+				while (true)
+				{
+
+				}
+			}*/
+			
+			
 			systemP->errorReport(3, toAddress);
 			digitalWrite(DEBUG_LED, LOW);
 			numOfRetries = 0;
@@ -197,12 +207,12 @@ bool Radio::startupPings()
 	return pingsSuccess;
 }
 
-String Radio::encodeMessage(float temperature, int motion, int fromAddress)
+String Radio::encodeMessage(float temperature, int motion, int fromAddress, int toAddress)    /// TODO: Add toAddress to the package
 {
 	/*
 	Follows the following format:
 
-	fromAddress -> spacer -> temperature -> spacer -> motion -> end char
+	fromAddress -> spacer -> temperature -> spacer -> motion ->  end char
 
 	Array index#-------> 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16
 	Array index slot -->[9,0,0,1,-,7,4,.,5,6,-, 5, 8, 9, x]
@@ -217,6 +227,7 @@ String Radio::encodeMessage(float temperature, int motion, int fromAddress)
 
 	String numberHolder;
 	String messageToReturn;
+	int lastSpacePos = 0; //posistion of last spacer
 
 	numberHolder = static_cast<String>(fromAddress);
 
@@ -247,12 +258,23 @@ String Radio::encodeMessage(float temperature, int motion, int fromAddress)
 		message[i + 11] = numberHolder[i];
 	}
 
+	message[numberHolder.length() + 11] = '-';
+	lastSpacePos = (numberHolder.length() + 11);
+
+	//Add toAddress into the cstring
+	numberHolder = static_cast<String>(toAddress);
+
+	for (int i = 0; i < numberHolder.length(); i++)
+	{
+		message[i + (lastSpacePos + 1)] = numberHolder[i];
+	}
+
 	//Enter the end char
-	message[numberHolder.length() + 11] = 'x';
+	message[numberHolder.length() + (lastSpacePos + 1)] = 'x';
 
 	messageToReturn = message;
 
-	//Serial.println(message);//debug only
+	Serial.println(message);//debug only
 
 	return messageToReturn;
 }
@@ -261,7 +283,7 @@ String Radio::encodeMessage(float temperature, int motion, int fromAddress)
 
 
 
-bool Radio::decodeMessage(float &temperature, int &motion, int &fromAddress, const String &codedMessage)
+bool Radio::decodeMessage(float &temperature, int &motion, int &fromAddress, int &toAddress, const String &codedMessage)
 {
 	String stringHolder;
 	int indx = 0;
@@ -307,7 +329,7 @@ bool Radio::decodeMessage(float &temperature, int &motion, int &fromAddress, con
 	stringHolder = "";
 
 	//Get motion data
-	while (message[indx] != 'x')
+	while (message[indx] != '-')
 	{
 		stringHolder += message[indx];
 		indx++;
@@ -315,6 +337,18 @@ bool Radio::decodeMessage(float &temperature, int &motion, int &fromAddress, con
 	}
 
 	motion = atoi(stringHolder.c_str()); //Convert string into int
+
+	indx++;
+	stringHolder = "";
+
+	//Get toAddress data
+	while (message[indx] != 'x')
+	{
+		stringHolder += message[indx];
+		indx++;
+	}
+
+	toAddress = atoi(stringHolder.c_str());
 
 	return true;
 }
@@ -359,8 +393,8 @@ bool Radio::isValidMessage(const String &codedMessage)
 		}
 	}
 
-	//If message was formated correctly, the variable should equal 3
-	if (spacerCount == 3)
+	//If message was formated correctly, the variable should equal 4
+	if (spacerCount == 4)
 	{
 		return true;
 	}

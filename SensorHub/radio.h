@@ -75,8 +75,7 @@ public:
 	Returns:
 		NONE
 	*/
-	String encodeMessage(float temperature, int motion, int fromAddress);
-
+	String encodeMessage(float temperature, int motion, int fromAddress, int toAddress);
 
 private:
 	char message[MESSAGE_SIZE];
@@ -99,7 +98,7 @@ private:
 		True -- decoded successfully
 		False -- NOT decoded successfully
 	*/
-	bool decodeMessage(float &temperature, int &motion, int &fromAddress, const String &codedMessage);
+	bool decodeMessage(float &temperature, int &motion, int &fromAddress, int &toAddress, const String &codedMessage);
 
 	/*
 	Input:
