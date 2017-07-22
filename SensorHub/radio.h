@@ -28,7 +28,7 @@ public:
 		False -- if failed
 		True -- if succeeded
 	*/
-	bool sendData(float temperature, int motion, int fromAddress, int toAddress);
+	bool sendData(float temperature, int motion, int fromAddress, int toAddress, int forwardAddress = 0);
 
 	/*
 	Input:
@@ -46,7 +46,7 @@ public:
 		False -- if failed
 		True -- if succeeded
 	*/
-	bool requestData(int toAddress);
+	bool requestData(int toAddress, int forwardAddress = 0);
 
 	/*
 	Description:

@@ -34,9 +34,14 @@ Radio::Radio(const int myAddress, const int range[], RF24* radioPointer, Hub* sy
 	}
 }
 
-bool Radio::sendData(float temperature, int motion, int fromAddress, int toAddress)
+bool Radio::sendData(float temperature, int motion, int fromAddress, int toAddress, int forwardAddress)
 {
 	String codedMessage;
+	
+	if (forwardAddress == 0)
+	{
+		forwardAddress = toAddress;
+	}
 
 	//Pack the data into a single string
 	codedMessage = encodeMessage(temperature, motion, fromAddress, toAddress);
@@ -44,9 +49,14 @@ bool Radio::sendData(float temperature, int motion, int fromAddress, int toAddre
 	digitalWrite(DEBUG_LED, HIGH);
 
 	radioP->stopListening();
-	radioP->openWritingPipe(toAddress);
+	radioP->openWritingPipe(forwardAddress);
 
 	radioP->flush_tx();
+
+	Serial.print("Sending to: ");//Debug only
+	Serial.println(toAddress);//Debug only
+	Serial.print("forwardAddress: ");//Debug only
+	Serial.println(forwardAddress);//Debug only
 
 	if (radioP->write(codedMessage.c_str(), MESSAGE_SIZE))
 	{
@@ -64,18 +74,64 @@ bool Radio::sendData(float temperature, int motion, int fromAddress, int toAddre
 			Serial.println("Trying again...");
 			numOfRetries++;
 			delay(500);
-			sendData(temperature, motion, fromAddress, toAddress);
+			sendData(temperature, motion, fromAddress, toAddress, forwardAddress);
 		}
+		//If sending still failed, try forwarding to other hubs
 		else if (numOfRetries >= MAX_NUM_OF_RETRIES)
 		{
-			/*if (MY_ADDRESS != 9001)
-			{
-				while (true)
-				{
-
-				}
-			}*/
+			numOfRetries = 0;
 			
+			
+			if (toAddress < myAddress && (forwardAddress != myAddress))
+			{
+				//Start working our way from the forwardAddress and finding a hub we can forward the message to
+				forwardAddress++;
+
+				//If we have ranout of address to try
+				if (forwardAddress > myAddress || forwardAddress == myAddress)
+				{
+					systemP->errorReport(3, toAddress);
+					digitalWrite(DEBUG_LED, LOW);
+					return false;
+				}
+				
+				if(!sendData(temperature, motion, fromAddress, toAddress, forwardAddress))
+				{
+					return false;
+				}
+				else
+				{
+					Serial.println("true");
+					digitalWrite(DEBUG_LED, LOW);
+					radioP->txStandBy();
+					numOfRetries = 0;
+					return true;
+				}
+			}
+			else
+			{
+				//Start working our way from the forwardAddress and finding a hub we can forward the message to
+				forwardAddress--;
+
+				//If we have ranout of address to try
+				if (forwardAddress < myAddress || forwardAddress == myAddress)
+				{
+					return false;
+				}
+
+				if (!sendData(temperature, motion, fromAddress, toAddress, forwardAddress))
+				{
+					return false;
+				}
+				else
+				{
+					Serial.println("true");
+					digitalWrite(DEBUG_LED, LOW);
+					radioP->txStandBy();
+					numOfRetries = 0;
+					return true;
+				}
+			}
 			
 			systemP->errorReport(3, toAddress);
 			digitalWrite(DEBUG_LED, LOW);
@@ -118,14 +174,24 @@ bool Radio::receiveData()
 	return true;
 }
 
-bool Radio::requestData(int toAddress)
+bool Radio::requestData(int toAddress, int forwardAddress)
 {
 	//long targetTime = 0;
 
+	if (forwardAddress == 0)
+	{
+		forwardAddress = toAddress;
+	}
+
 	radioP->stopListening();
-	radioP->openWritingPipe(toAddress);
+	radioP->openWritingPipe(forwardAddress);
 
 	digitalWrite(DEBUG_LED, HIGH);
+
+	Serial.print("Sending to: ");//Debug only
+	Serial.println(toAddress);//Debug only
+	Serial.print("forwardAddress: ");//Debug only
+	Serial.println(forwardAddress);//Debug only
 
 	if (radioP->write("S", sizeof("S")))
 	{
@@ -134,6 +200,7 @@ bool Radio::requestData(int toAddress)
 		numOfRetries = 0;
 		return true;
 	}
+	//If sending failed, retry up to 4 times
 	else
 	{
 		if (numOfRetries < MAX_NUM_OF_RETRIES)
@@ -141,10 +208,69 @@ bool Radio::requestData(int toAddress)
 			Serial.println("Trying request again...");
 			numOfRetries++;
 			delay(500);
-			requestData(toAddress);
+			requestData(toAddress, forwardAddress);
 		}
-		else
+		//If sending still failed, try forwarding to other hubs
+		else if (numOfRetries >= MAX_NUM_OF_RETRIES)
 		{
+			numOfRetries = 0;
+
+
+			if (toAddress < myAddress && (forwardAddress != myAddress))
+			{
+				//Start working our way from the forwardAddress and finding a hub we can forward the message to
+				forwardAddress++;
+
+				//Serial.println("\n In num1!!");//Debug only
+
+				//If we have ranout of address to try
+				if (forwardAddress > myAddress || forwardAddress == myAddress)
+				{
+					systemP->errorReport(3, toAddress);
+					digitalWrite(DEBUG_LED, LOW);
+					return false;
+				}
+
+				if (!requestData(toAddress, forwardAddress))
+				{
+					return false;
+				}
+				else
+				{
+					Serial.println("true");
+					digitalWrite(DEBUG_LED, LOW);
+					radioP->txStandBy();
+					numOfRetries = 0;
+					return true;
+				}
+			}
+			else
+			{
+				//Start working our way from the forwardAddress and finding a hub we can forward the message to
+				forwardAddress--;
+
+				//Serial.println("\n In num2!!");//Debug only
+
+				//If we have ranout of address to try
+				if (forwardAddress < myAddress || forwardAddress == myAddress)
+				{
+					return false;
+				}
+
+				if (!requestData(toAddress, forwardAddress))
+				{
+					return false;
+				}
+				else
+				{
+					Serial.println("true");
+					digitalWrite(DEBUG_LED, LOW);
+					radioP->txStandBy();
+					numOfRetries = 0;
+					return true;
+				}
+			}
+
 			systemP->errorReport(3, toAddress);
 			digitalWrite(DEBUG_LED, LOW);
 			numOfRetries = 0;
