@@ -37,14 +37,14 @@ bool Hub::begin(bool withPings)
 		if (withPings)
 		{
 			Sleep(2000);
-			serial.SendData("true", 4);//Tell hub it should do the startup pings
+			//serial.SendData("true", 4);//Tell hub it should do the startup pings
 			cout << "Waiting for hub to startup..." << endl;
 			Sleep(startupWaitTime);
 		}
 		else
 		{
 			Sleep(2000);
-			serial.SendData("false", 5);//Tell hub it should do the startup pings
+			//serial.SendData("false", 5);//Tell hub it should do the startup pings
 			cout << "Waiting for hub to startup..." << endl;
 			Sleep(2000);
 		}
@@ -87,7 +87,7 @@ string Hub::requestData(int hubAddress)
 	cout << "\n\nWaiting for response[" << requestToSend << "]..." << endl;
 	//cout << "\n\nWaiting for response..." << endl;
 
-	clock.startTimer(4);
+	clock.startTimer(10);
 
 	while (serial.ReadDataWaiting() <= 0 && !clock.timerPassed()){}
 
@@ -98,7 +98,7 @@ string Hub::requestData(int hubAddress)
 		cout << "Took to long..." << endl;
 		cout << "restarting..." << endl;
 
-		restart();
+		//restart();
 
 		//Make we haven't retried to many times, and then try again
 		if (numOfRetries < MAX_NUM_OF_RETRIES)
@@ -127,9 +127,10 @@ void Hub::printData(string codedData)
 	float temperature = 0;
 	int motion = 0;
 	int fromAddress = 0;
+	int toAddress = 0;
 
 	//Only continue if the data can be decoded
-	if (!decodeData(temperature, motion, fromAddress, codedData))
+	if (!decodeData(temperature, motion, fromAddress, toAddress, codedData))
 	{
 		return;
 	}
@@ -146,12 +147,13 @@ void Hub::storeData(string codedData)
 	float temperature = 0;
 	int motion = 0;
 	int fromAddress = 0;
+	int toAddress = 0;
 	int address = 0;
 	int pos = 0;
 	char holder = ' ';
 
 	//Only continue if the data can be decoded
-	if (!decodeData(temperature, motion, fromAddress, codedData))
+	if (!decodeData(temperature, motion, fromAddress, toAddress, codedData))
 	{
 		return;
 	}
@@ -205,7 +207,7 @@ bool Hub::isValidData(const string & codedData)
 	}
 
 	//If message was formated correctly, the variable should equal 3
-	if (spacerCount == 3)
+	if (spacerCount == 4)
 	{
 		return true;
 	}

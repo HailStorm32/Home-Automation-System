@@ -70,7 +70,7 @@ void setup()
 	Serial.flush();
 
 	//Get info from the command center on if we should do pings
-	while(!dataRecived)
+	/*while(!dataRecived)
 	{
 		//We have gone 2sec with no instructions from the command center, do pings anyway
 		if (millis() >= targetTime)
@@ -95,7 +95,9 @@ void setup()
 			}
 			dataRecived = true;
 		}
-	}
+	}*/
+
+	doPings = false;//Debug Only
 
 	if (doPings)
 	{
@@ -134,6 +136,7 @@ void loop()
 	int motion = 0;
 	int fromAddress = 0;
 	int toAddress = 0;
+	char command = ' ';
 
 	while (true)
 	{
@@ -151,7 +154,7 @@ void loop()
 
 				return;
 			case 9002:
-				if (mainRadio.requestData(9002))
+				if (mainRadio.sendRequest(9002, 'S'))
 				{
 					Serial.println("9002:");
 					mainRadio.receiveData();
@@ -160,7 +163,7 @@ void loop()
 				}
 				return;
 			case 9003:
-				if (mainRadio.requestData(9003))
+				if (mainRadio.sendRequest(9003, 'S'))
 				{
 					Serial.println("9003:");
 					mainRadio.receiveData();
@@ -173,9 +176,18 @@ void loop()
 		//IF not master hub
 		else
 		{
-			mainRadio.waitForRequest();
+			command = mainRadio.waitForRequest();
 
-			mainRadio.sendData(dht.convertCtoF(dht.readTemperature()), 4, MY_ADDRESS, 9001);
+			if (command == 'S')
+			{
+				mainRadio.sendData(dht.convertCtoF(dht.readTemperature()), 4, 9001);
+				command = ' ';
+			}
+			else if (command == 'F')
+			{
+				mainRadio.receiveData();
+				command = ' ';
+			}
 			
 		}
 

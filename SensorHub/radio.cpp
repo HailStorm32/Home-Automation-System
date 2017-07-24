@@ -25,7 +25,7 @@ Radio::Radio(const int myAddress, const int range[], RF24* radioPointer, Hub* sy
 
 	//Set variables
 	this->myAddress = myAddress;
-	fromAddress = myAddress;
+	//fromAddress = myAddress;
 	numOfRetries = 0;
 
 	for (int indx = 0; indx < RANGE_SIZE; indx++)
@@ -34,17 +34,30 @@ Radio::Radio(const int myAddress, const int range[], RF24* radioPointer, Hub* sy
 	}
 }
 
-bool Radio::sendData(float temperature, int motion, int fromAddress, int toAddress, int forwardAddress)
+bool Radio::sendData(float temperature, int motion, int toAddress, int fromAddress, int forwardAddress)
 {
 	String codedMessage;
-	
+	static bool sentStandBy = false;
+	bool requestSucceeded = true;
+
 	if (forwardAddress == 0)
 	{
 		forwardAddress = toAddress;
 	}
 
-	//Pack the data into a single string
-	codedMessage = encodeMessage(temperature, motion, fromAddress, toAddress);
+	//Will use "myAddress" as the from address if argument is left blank (it should be if we are NOT forwarding)
+	if (fromAddress == 0)
+	{
+		//Serial.println("Using myAddress");//Debug
+		//Pack the data into a single string
+		codedMessage = encodeMessage(temperature, motion, myAddress, toAddress);
+	}
+	else
+	{
+		//Serial.println("Using default");//Debug
+		//Pack the data into a single string
+		codedMessage = encodeMessage(temperature, motion, fromAddress, toAddress);
+	}
 
 	digitalWrite(DEBUG_LED, HIGH);
 
@@ -58,6 +71,13 @@ bool Radio::sendData(float temperature, int motion, int fromAddress, int toAddre
 	Serial.print("forwardAddress: ");//Debug only
 	Serial.println(forwardAddress);//Debug only
 
+	//If we are sending data to a "slave" hub, we need to let them know by sending a listening request
+	if (forwardAddress != 9001 && sentStandBy == false)
+	{
+		requestSucceeded = sendRequest(forwardAddress, 'F', 0, 0, false);
+		sentStandBy = true;
+	}
+
 	if (radioP->write(codedMessage.c_str(), MESSAGE_SIZE))
 	{
 		Serial.println("true");
@@ -69,19 +89,20 @@ bool Radio::sendData(float temperature, int motion, int fromAddress, int toAddre
 	//If sending failed, retry up to 4 times
 	else
 	{
-		if (numOfRetries < MAX_NUM_OF_RETRIES)
+		if (numOfRetries < MAX_NUM_OF_RETRIES && requestSucceeded == true)
 		{
 			Serial.println("Trying again...");
 			numOfRetries++;
 			delay(500);
-			sendData(temperature, motion, fromAddress, toAddress, forwardAddress);
+			sendData(temperature, motion, toAddress, fromAddress, forwardAddress);
 		}
 		//If sending still failed, try forwarding to other hubs
-		else if (numOfRetries >= MAX_NUM_OF_RETRIES)
+		else if (numOfRetries >= MAX_NUM_OF_RETRIES || requestSucceeded == false)
 		{
 			numOfRetries = 0;
-			
-			
+			sentStandBy = false; //Reset the flag because we are going to be sending to another address
+
+
 			if (toAddress < myAddress && (forwardAddress != myAddress))
 			{
 				//Start working our way from the forwardAddress and finding a hub we can forward the message to
@@ -90,12 +111,11 @@ bool Radio::sendData(float temperature, int motion, int fromAddress, int toAddre
 				//If we have ranout of address to try
 				if (forwardAddress > myAddress || forwardAddress == myAddress)
 				{
-					systemP->errorReport(3, toAddress);
-					digitalWrite(DEBUG_LED, LOW);
+					Serial.println("Failed: ranout of address");//Debug only
 					return false;
 				}
-				
-				if(!sendData(temperature, motion, fromAddress, toAddress, forwardAddress))
+
+				if (!sendData(temperature, motion, toAddress, fromAddress, forwardAddress))
 				{
 					return false;
 				}
@@ -112,14 +132,16 @@ bool Radio::sendData(float temperature, int motion, int fromAddress, int toAddre
 			{
 				//Start working our way from the forwardAddress and finding a hub we can forward the message to
 				forwardAddress--;
+				sentStandBy = false; //Reset the flag because we are going to be sending to another address
 
 				//If we have ranout of address to try
 				if (forwardAddress < myAddress || forwardAddress == myAddress)
 				{
+					Serial.println("Failed: ranout of address");//Debug only
 					return false;
 				}
 
-				if (!sendData(temperature, motion, fromAddress, toAddress, forwardAddress))
+				if (!sendData(temperature, motion, toAddress, fromAddress, forwardAddress))
 				{
 					return false;
 				}
@@ -132,7 +154,7 @@ bool Radio::sendData(float temperature, int motion, int fromAddress, int toAddre
 					return true;
 				}
 			}
-			
+
 			systemP->errorReport(3, toAddress);
 			digitalWrite(DEBUG_LED, LOW);
 			numOfRetries = 0;
@@ -149,6 +171,7 @@ bool Radio::receiveData()
 	float temp = 0;
 	int motion = 0;
 	int fromAddress = 0;
+	int toAddress = 0;
 
 	radioP->openReadingPipe(0, myAddress); //must be set to receiver's address. Will only receive data from hubs that have opened writing pipes to this address
 	radioP->startListening();
@@ -159,29 +182,51 @@ bool Radio::receiveData()
 
 	codedMessage = codedMessageCStr;
 
-	//decodeMessage(temp, motion, fromAddress, codedMessage);
+	decodeMessage(temp, motion, fromAddress, toAddress, codedMessage);
 
-	radioP->flush_rx();
+	//If the data was for us
+	if (toAddress == myAddress)
+	{
+		radioP->flush_rx();
 
-	radioP->closeReadingPipe(0);
+		radioP->closeReadingPipe(0);
 
-	Serial.print(codedMessage);//Send to the command center
+		Serial.print(codedMessage);//Send to the command center
 
-	Serial.println(temp);
-	Serial.println(motion);
-	Serial.println(fromAddress);
+		Serial.println(temp); //Debug only
+		Serial.println(motion);//Debug only
+		Serial.println(fromAddress);//Debuf only
+	}
+	//If the data was NOT for us
+	else
+	{
+		//Forward the data
+		sendData(temp, motion, toAddress, fromAddress);
+	}
+
+
 
 	return true;
 }
 
-bool Radio::requestData(int toAddress, int forwardAddress)
+bool Radio::sendRequest(int toAddress, char command, int forwardAddress, int fromAddress, bool tryForwarding)
 {
-	//long targetTime = 0;
+	String codedMessage;
 
 	if (forwardAddress == 0)
 	{
 		forwardAddress = toAddress;
 	}
+
+	if (fromAddress == 0)
+	{
+		codedMessage = encodeMessage(toUpperCase(command), toAddress, myAddress);
+	}
+	else
+	{
+		codedMessage = encodeMessage(toUpperCase(command), toAddress, fromAddress);
+	}
+
 
 	radioP->stopListening();
 	radioP->openWritingPipe(forwardAddress);
@@ -193,7 +238,7 @@ bool Radio::requestData(int toAddress, int forwardAddress)
 	Serial.print("forwardAddress: ");//Debug only
 	Serial.println(forwardAddress);//Debug only
 
-	if (radioP->write("S", sizeof("S")))
+	if (radioP->write(codedMessage.c_str(), MESSAGE_SIZE))
 	{
 		digitalWrite(DEBUG_LED, LOW);
 		radioP->txStandBy();
@@ -208,13 +253,12 @@ bool Radio::requestData(int toAddress, int forwardAddress)
 			Serial.println("Trying request again...");
 			numOfRetries++;
 			delay(500);
-			requestData(toAddress, forwardAddress);
+			sendRequest(toAddress, toUpperCase(command), forwardAddress);
 		}
 		//If sending still failed, try forwarding to other hubs
-		else if (numOfRetries >= MAX_NUM_OF_RETRIES)
+		else if (numOfRetries >= MAX_NUM_OF_RETRIES && tryForwarding == true)
 		{
 			numOfRetries = 0;
-
 
 			if (toAddress < myAddress && (forwardAddress != myAddress))
 			{
@@ -223,15 +267,14 @@ bool Radio::requestData(int toAddress, int forwardAddress)
 
 				//Serial.println("\n In num1!!");//Debug only
 
-				//If we have ranout of address to try
+				//If we have ranout of addresses to try
 				if (forwardAddress > myAddress || forwardAddress == myAddress)
 				{
-					systemP->errorReport(3, toAddress);
-					digitalWrite(DEBUG_LED, LOW);
+					Serial.println("Failed: ranout of address");//Debug only
 					return false;
 				}
 
-				if (!requestData(toAddress, forwardAddress))
+				if (!sendRequest(toAddress, toUpperCase(command), forwardAddress))
 				{
 					return false;
 				}
@@ -251,13 +294,14 @@ bool Radio::requestData(int toAddress, int forwardAddress)
 
 				//Serial.println("\n In num2!!");//Debug only
 
-				//If we have ranout of address to try
+				//If we have ranout of addresses to try
 				if (forwardAddress < myAddress || forwardAddress == myAddress)
 				{
+					Serial.println("Failed: ranout of address");//Debug only
 					return false;
 				}
 
-				if (!requestData(toAddress, forwardAddress))
+				if (!sendRequest(toAddress, toUpperCase(command), forwardAddress))
 				{
 					return false;
 				}
@@ -276,31 +320,67 @@ bool Radio::requestData(int toAddress, int forwardAddress)
 			numOfRetries = 0;
 			return false;
 		}
+		else
+		{
+			//systemP->errorReport(3, toAddress);
+			Serial.println("Failed");
+			digitalWrite(DEBUG_LED, LOW);
+			numOfRetries = 0;
+			return false;
+		}
 	}
 }
 
-bool Radio::waitForRequest()
+char Radio::waitForRequest()
 {
-	char typeOfRequest[1];
+	char command;
+	char codedMessageCStr[MESSAGE_SIZE] = {};
+	String codedMessage;
+	int fromAddress;
+	int toAddress;
+	bool breakLoop = false;
 
 	radioP->openReadingPipe(0, myAddress); //must be set to receiver's address. Will only receive data from hubs that have opened writing pipes to this address
 	radioP->startListening();
 
-	Serial.println("Waitng for request...");
-	waitForData(-1);
-	Serial.println("Got...");
-
-	radioP->read(typeOfRequest, sizeof(typeOfRequest));
-
-	if (typeOfRequest[0] == 'S')
+	//Stay in a loop, because the request might not be for us
+	while (!breakLoop)
 	{
-		return true;
-	}
-	else
-	{
-		return false;
+		//radioP->openReadingPipe(0, myAddress); //must be set to receiver's address. Will only receive data from hubs that have opened writing pipes to this address
+		//radioP->startListening();
+
+		Serial.println("Waiting for request...");
+		waitForData(-1);
+		Serial.println("Got...");
+
+		radioP->read(codedMessageCStr, MESSAGE_SIZE);
+
+		codedMessage = codedMessageCStr;
+
+		//Serial.println(codedMessage);//Debug
+
+		decodeMessage(fromAddress, command, toAddress, codedMessage);
+
+		//If the request is for us
+		if (toAddress == myAddress)
+		{
+			//leave the loop
+			breakLoop = true;
+		}
+		else
+		{
+			//Forward the request
+			Serial.println("Forwarding...");
+			sendRequest(toAddress, 'D', 0, fromAddress);
+			
+			Serial.println("Done forwarding");//Debug only
+			
+			radioP->openReadingPipe(0, myAddress); //must be set to receiver's address. Will only receive data from hubs that have opened writing pipes to this address
+			radioP->startListening();
+		}
 	}
 
+	return command;
 }
 
 bool Radio::startupPings()
@@ -338,19 +418,26 @@ String Radio::encodeMessage(float temperature, int motion, int fromAddress, int 
 	/*
 	Follows the following format:
 
-	fromAddress -> spacer -> temperature -> spacer -> motion ->  end char
+	fromAddress -> spacer -> temperature -> spacer -> motion -> spacer -> toAddress -> end char
 
-	Array index#-------> 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16
-	Array index slot -->[9,0,0,1,-,7,4,.,5,6,-, 5, 8, 9, x]
+	Array index#-------> 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19
+	Array index slot -->[9,0,0,1,-,7,4,.,5,6,-, 5, 8, 9, -, 9, 0, 0, 3, x]
 
-	9001-74.36-589x
+	9001-74.36-589-9003x
 	*/
 
-	if ((fromAddress < 9001 || fromAddress > 9999) || (motion < 0 || motion > 9999) || (temperature < 0 || temperature > 9999))
+
+	/*Serial.println(temperature); //Debug only
+	Serial.println(motion);//Debug only
+	Serial.println(fromAddress);//Debug only
+	Serial.println(toAddress); //Debug only*/
+
+	if ((fromAddress < 9001 || fromAddress > 9999) || (motion < 0 || motion > 9999) || (temperature < 0 || temperature > 9999) || (toAddress < 9001 || toAddress > 9999))
 	{
 		return "ERROR";
 	}
 
+	char message[MESSAGE_SIZE] = {};
 	String numberHolder;
 	String messageToReturn;
 	int lastSpacePos = 0; //posistion of last spacer
@@ -395,12 +482,68 @@ String Radio::encodeMessage(float temperature, int motion, int fromAddress, int 
 		message[i + (lastSpacePos + 1)] = numberHolder[i];
 	}
 
-	//Enter the end char
+	//Add the end char
 	message[numberHolder.length() + (lastSpacePos + 1)] = 'x';
 
 	messageToReturn = message;
 
 	Serial.println(message);//debug only
+
+	return messageToReturn;
+}
+
+String Radio::encodeMessage(char command, int toAddress, int fromAddress)
+{
+	/*
+	Follows the following format:
+
+	fromAddress -> spacer -> command -> spacer -> toAddress -> end char
+
+	Array index#-------> 0 1 2 3 4 5 6 7 8 9 10 11
+	Array index slot -->[9,0,0,1,-,S,-,9,0,0, 3, x]
+
+	9001-S-9003x
+	*/
+
+	if ((fromAddress < 9001 || fromAddress > 9999) || (toAddress < 9001 || toAddress > 9999))
+	{
+		return "ERROR";
+	}
+
+	String numberHolder;
+	String messageToReturn;
+	int lastSpacePos = 0; //posistion of last spacer
+	char message[MESSAGE_SIZE] = {};
+
+	numberHolder = static_cast<String>(fromAddress);
+
+	//Add the fromAddress into the cstring
+	for (int i = 0; i < 4; i++)
+	{
+		message[i] = numberHolder[i];
+	}
+
+	message[4] = '-';
+
+	//Add the command char
+	message[5] = toUpperCase(command);
+
+	message[6] = '-';
+
+	numberHolder = static_cast<String>(toAddress);
+
+	//Add the toAddress into the cstring
+	for (int i = 0; i < 4; i++)
+	{
+		message[i + 7] = numberHolder[i];
+	}
+
+	//Add the end char
+	message[11] = 'x';
+
+	messageToReturn = message;
+
+	Serial.println(messageToReturn);//Debug only
 
 	return messageToReturn;
 }
@@ -413,8 +556,9 @@ bool Radio::decodeMessage(float &temperature, int &motion, int &fromAddress, int
 {
 	String stringHolder;
 	int indx = 0;
-	int secondIndx = 0;
+	//int secondIndx = 0;
 	char messageData[5];
+	char message[MESSAGE_SIZE] = {};
 
 	strcpy(message, codedMessage.c_str());
 
@@ -444,13 +588,13 @@ bool Radio::decodeMessage(float &temperature, int &motion, int &fromAddress, int
 	{
 		stringHolder += message[indx];
 		indx++;
-		secondIndx++;
+		//secondIndx++;
 	}
 
 	temperature = atof(stringHolder.c_str()); //Convert string into int
 
 	indx++;
-	secondIndx = 0;
+	//secondIndx = 0;
 
 	stringHolder = "";
 
@@ -459,13 +603,58 @@ bool Radio::decodeMessage(float &temperature, int &motion, int &fromAddress, int
 	{
 		stringHolder += message[indx];
 		indx++;
-		secondIndx++;
+		//secondIndx++;
 	}
 
 	motion = atoi(stringHolder.c_str()); //Convert string into int
 
 	indx++;
 	stringHolder = "";
+
+	//Get toAddress data
+	while (message[indx] != 'x')
+	{
+		stringHolder += message[indx];
+		indx++;
+	}
+
+	toAddress = atoi(stringHolder.c_str());
+
+	return true;
+}
+
+bool Radio::decodeMessage(int & fromAddress, char & command, int & toAddress, const String & codedMessage)
+{
+	String stringHolder;
+	int indx = 0;
+	//int secondIndx = 0;
+	char messageData[5];
+	char message[MESSAGE_SIZE] = {};
+
+	strcpy(message, codedMessage.c_str());
+
+	if (isValidMessage(codedMessage, false) == false)
+	{
+		systemP->errorReport(11);
+		return false;
+	}
+
+	//Get fromAddress data
+	while (message[indx] != '-')
+	{
+		stringHolder += message[indx];
+		indx++;
+	}
+
+	fromAddress = atoi(stringHolder.c_str()); //Convert string into int
+
+	indx++;
+	stringHolder = "";
+
+	//Get the command
+	command = message[indx];
+
+	indx += 2;
 
 	//Get toAddress data
 	while (message[indx] != 'x')
@@ -506,9 +695,21 @@ bool Radio::waitForData(int milliSec, bool printError)
 	return true;
 }
 
-bool Radio::isValidMessage(const String &codedMessage)
+bool Radio::isValidMessage(const String &codedMessage, bool isLargeMessage)
 {
 	unsigned int spacerCount = 0;
+	unsigned int maxNumOfSpacers = 0;
+
+	Serial.println(codedMessage);
+
+	if (isLargeMessage)
+	{
+		maxNumOfSpacers = 4;
+	}
+	else
+	{
+		maxNumOfSpacers = 3;
+	}
 
 	//count the spacers ( - ) and end char ( x )
 	for (int indx = 0; indx < codedMessage.length(); indx++)
@@ -519,8 +720,8 @@ bool Radio::isValidMessage(const String &codedMessage)
 		}
 	}
 
-	//If message was formated correctly, the variable should equal 4
-	if (spacerCount == 4)
+	//If message was formated correctly, the variable should equal 4 or 3
+	if (spacerCount == maxNumOfSpacers)
 	{
 		return true;
 	}
@@ -627,7 +828,7 @@ bool Radio::sendPing(int index)
 			delay(300);
 			numOfRetries++;
 		}
-		
+
 		if (didSend == false && numOfRetries)
 		{
 			systemP->errorReport(3, toAddress);

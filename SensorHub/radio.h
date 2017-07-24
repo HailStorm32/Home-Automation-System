@@ -28,7 +28,7 @@ public:
 		False -- if failed
 		True -- if succeeded
 	*/
-	bool sendData(float temperature, int motion, int fromAddress, int toAddress, int forwardAddress = 0);
+	bool sendData(float temperature, int motion, int toAddress, int fromAddress = 0, int forwardAddress = 0);
 
 	/*
 	Input:
@@ -46,7 +46,7 @@ public:
 		False -- if failed
 		True -- if succeeded
 	*/
-	bool requestData(int toAddress, int forwardAddress = 0);
+	bool sendRequest(int toAddress, char command, int forwardAddress = 0, int fromAddress = 0, bool tryForwarding = true);
 
 	/*
 	Description:
@@ -55,7 +55,7 @@ public:
 		True -- received a request for data
 		False -- waiting for request
 	*/
-	bool waitForRequest();
+	char waitForRequest();
 
 	/*
 	Description:
@@ -72,21 +72,33 @@ public:
 		temperature -- 0.0-999.9
 		motion -- 0-9999
 		fromAddress -- 9001-9008
+		toAddress -- 9001-9008
 	Returns:
-		NONE
+		string containing the data
 	*/
 	String encodeMessage(float temperature, int motion, int fromAddress, int toAddress);
 
-private:
-	char message[MESSAGE_SIZE];
+	/*
+	Input:
+		Command
+		-- char 'F' forward message
+		-- char 'S' send back a sensor data
+		fromAddress -- 9001-9008
+		toAddress -- 9001-9008
+	Returns:
+		string containing the data
+	*/
+	String encodeMessage(char command, int toAddress, int fromAddress);
 
-	int fromAddress;
+private:
+	//char message[MESSAGE_SIZE];
+
+	//int fromAddress;
 	RF24 * radioP;
 	Hub * systemP;
 	int range[RANGE_SIZE];
 	int myAddress;
 	unsigned int numOfRetries;
-
 
 	/*
 	Input:
@@ -102,6 +114,18 @@ private:
 
 	/*
 	Input:
+		codedMessage (I) -- string of coded message
+		command (O)
+		toAddress (O)
+		fromAddress (O)
+	Returns:
+		True -- decoded successfully
+		False -- NOT decoded successfully
+	*/
+	bool decodeMessage(int &fromAddress, char &command, int &toAddress, const String &codedMessage);
+
+	/*
+	Input:
 		waitTime -- integer value
 					value < 0 -- infinite wait time
 	Returns:
@@ -113,11 +137,12 @@ private:
 	/*
 	Input:
 		codedMessage (I) -- string of coded message
+		isLargeMessage (I) -- defaults to True
 	Returns:
 		True -- message was formated correctly
 		False -- message was NOT formated correctly
 	*/
-	bool isValidMessage(const String &codedMessage);
+	bool isValidMessage(const String &codedMessage, bool isLargeMessage = true);
 
 	/*
 	Description: 
