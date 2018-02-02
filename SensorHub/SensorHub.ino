@@ -26,7 +26,7 @@ DHT dht(DHTPIN, DHTTYPE); // Initialize temp sensor
 const int MY_ADDRESS = setAddress();
 const int RANGE[5] = { giveRange(1, MY_ADDRESS), giveRange(2, MY_ADDRESS), giveRange(3, MY_ADDRESS), giveRange(4, MY_ADDRESS), giveRange(5, MY_ADDRESS) };
 
-Hub hubSystem;
+Hub hubSystem(DEBUG_MODE);
 
 Radio mainRadio(MY_ADDRESS, RANGE, &radio, &hubSystem);
 
@@ -36,9 +36,9 @@ bool pingStatus = false;//debug only
 
 void setup()
 {
-	Serial.begin(9600);
+	Serial.begin(9600); 
 
-	Serial.println("in setup");
+	hubSystem.debugPrint("in setup");
 
 	//Startup radio and temperature sensors
 	radio.begin();
@@ -55,10 +55,11 @@ void setup()
 
 	digitalWrite(DEBUG_LED, HIGH); //Show that we have entered the "setup" stage
 
+	//Radio setup stuff
 	radio.setPALevel(RF24_PA_MAX);
 	if (!radio.setDataRate(RF24_250KBPS))
 	{
-		Serial.println("FAILED TO SET DATA RATE!!!");
+		hubSystem.debugPrint("FAILED TO SET DATA RATE!!!");
 	}
 	radio.setChannel(124); 
 
@@ -111,16 +112,16 @@ void setup()
 	digitalWrite(DEBUG_LED, LOW); //Show that we have exited the "setup" stage
 
 	///Debug StuffVVV
-	Serial.print("Ping status: ");
-	Serial.println(pingStatus);
+	hubSystem.debugPrint("Ping status: ");
+	hubSystem.debugPrint(pingStatus);
 
-	Serial.println("/////////////////////");
-	Serial.print("My Address: ");
-	Serial.println(MY_ADDRESS);
-	Serial.println("Read Range:");
+	hubSystem.debugPrint("/////////////////////");
+	hubSystem.debugPrint("My Address: ");
+	hubSystem.debugPrint(MY_ADDRESS);
+	hubSystem.debugPrint("Read Range:");
 	for (int i = 0; i <= 4; i++)
 	{
-		Serial.println(RANGE[i]);
+		hubSystem.debugPrint(RANGE[i]);
 	}
 }
 
@@ -128,9 +129,9 @@ void loop()
 {
 	String request;
 
-	Serial.println("VVVV");
-	//Serial.println(codedMessage2);
-	Serial.println("___________________");
+	hubSystem.debugPrint("VVVV");
+	//hubSystem.debugPrint(codedMessage2);
+	hubSystem.debugPrint("___________________");
 
 	float temperature = 0;
 	int motion = 0;
@@ -150,25 +151,25 @@ void loop()
 			switch (atoi(request.c_str()))
 			{
 			case 9001:
-				Serial.print(mainRadio.encodeMessage(dht.convertCtoF(dht.readTemperature()), 4, MY_ADDRESS, 9001));
+				Serial.print(mainRadio.encodeMessage(dht.convertCtoF(dht.readTemperature()), 4, MY_ADDRESS, 9001)); 
 
 				return;
 			case 9002:
 				if (mainRadio.sendRequest(9002, 'S'))
 				{
-					Serial.println("9002:");
+					hubSystem.debugPrint("9002:");
 					mainRadio.receiveData();
-					Serial.println("___________________");
-					Serial.println(" ");
+					hubSystem.debugPrint("___________________");
+					hubSystem.debugPrint(" ");
 				}
 				return;
 			case 9003:
 				if (mainRadio.sendRequest(9003, 'S'))
 				{
-					Serial.println("9003:");
+					hubSystem.debugPrint("9003:");
 					mainRadio.receiveData();
-					Serial.println("___________________");
-					Serial.println(" ");
+					hubSystem.debugPrint("___________________");
+					hubSystem.debugPrint(" ");
 				}
 				return;
 			}

@@ -13,7 +13,7 @@
 
 using namespace std;
 
-const unsigned int COM_PORT = 4;
+const unsigned int COM_PORT = 6;
 
 fstream file;
 const string COMMANDS_FILE = "Valid_Commands.txt";

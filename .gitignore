@@ -35,6 +35,20 @@ $RECYCLE.BIN/
 *.a
 *.xml
 *.vsarduino*
+*.sln
+*.vcxproj
+*.vcxproj.*
+SensorHub/Debug/*
+SensorHub/__vm/*
+SensorHub/.vs/*
+.vs/SensorHub/v14
+CommandCenter/Debug/*
+CommandCenter/x64/*
+CommandCenter/.vs/*
+CommandCenter/CommandCenter/x64/*
+CommandCenter/CommandCenter/*.vcxproj*
+CommandCenter/x64/Debug/*
+
 
 # =========================
 # Operating System Files

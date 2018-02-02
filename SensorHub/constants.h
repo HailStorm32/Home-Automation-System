@@ -30,3 +30,5 @@ const unsigned int MESSAGE_SIZE = 20;
 const unsigned int RANGE_SIZE = 5;
 
 const unsigned int MAX_NUM_OF_RETRIES = 4;
+
+const bool DEBUG_MODE = true;

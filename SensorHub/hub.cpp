@@ -10,10 +10,11 @@
 
 #include "hub.h"
 
-Hub::Hub()
+Hub::Hub(bool debugMode)
 {
 	temperature = 0;
 	motion = 0;
+	this->debugMode = debugMode;
 }
 
 bool Hub::logTemperature(float data)
@@ -61,9 +62,9 @@ void Hub::errorReport(int errorCode, int address)
 	switch (errorCode)
 	{
 	case 1:
-		Serial.println("");
-		Serial.println("ERROR 001!! Station address not set!");
-		Serial.println("Please restart!");
+		debugPrint("");
+		debugPrint("ERROR 001!! Station address not set!");
+		debugPrint("Please restart!");
 
 		while (true) //Blink error LED
 		{
@@ -76,9 +77,9 @@ void Hub::errorReport(int errorCode, int address)
 		return;
 
 	case 2:
-		Serial.println("");
-		Serial.println("ERROR 002!! PIR sensor not found!");
-		Serial.println("Please check connection and restart!");
+		debugPrint("");
+		debugPrint("ERROR 002!! PIR sensor not found!");
+		debugPrint("Please check connection and restart!");
 
 		while (true) //Blink error LED
 		{
@@ -91,11 +92,11 @@ void Hub::errorReport(int errorCode, int address)
 		return;
 
 	case 3:			
-		Serial.println(" ");
-		Serial.print("ERROR 003!! Unable to contact hub ");
-		Serial.print(address);
-		Serial.println("!!");
-		//Serial.println("Please restart!");
+		debugPrint(" ");
+		debugPrint("ERROR 003!! Unable to contact hub ");
+		debugPrint(address);
+		debugPrint("!!");
+		//debugPrint("Please restart!");
 
 		//while (true) //Blink error LED
 		//	{
@@ -107,10 +108,10 @@ void Hub::errorReport(int errorCode, int address)
 		return;
 
 	case 4:
-		Serial.println(" ");
-		Serial.print("ERROR 004!! Issue with code");
-		Serial.println("!!");
-		Serial.println("Please restart!");
+		debugPrint(" ");
+		debugPrint("ERROR 004!! Issue with code");
+		debugPrint("!!");
+		debugPrint("Please restart!");
 
 		while (true)
 		{
@@ -120,11 +121,11 @@ void Hub::errorReport(int errorCode, int address)
 		return;
 
 	case 5:
-		Serial.println(" ");
-		Serial.print("ERROR 005!! Station ");
-		Serial.print(address);
-		Serial.println(" did not set message type!!");
-		Serial.println("Please restart!");
+		debugPrint(" ");
+		debugPrint("ERROR 005!! Station ");
+		debugPrint(address);
+		debugPrint(" did not set message type!!");
+		debugPrint("Please restart!");
 
 		//	while (true)
 		//{
@@ -137,10 +138,10 @@ void Hub::errorReport(int errorCode, int address)
 		return;
 
 	case 6:
-		Serial.println(" ");
-		Serial.print("ERROR 006!! Failed to read from DHT sensor!");
-		Serial.println("!!");
-		Serial.println("Please restart!");
+		debugPrint(" ");
+		debugPrint("ERROR 006!! Failed to read from DHT sensor!");
+		debugPrint("!!");
+		debugPrint("Please restart!");
 
 		while (true)
 		{
@@ -153,10 +154,10 @@ void Hub::errorReport(int errorCode, int address)
 		return;
 
 	case 7:
-		Serial.println(" ");
-		Serial.print("ERROR 007!! No acknowledgement ping recieved from ");
-		Serial.print(address);
-		Serial.println("!!");
+		debugPrint(" ");
+		debugPrint("ERROR 007!! No acknowledgement ping recieved from ");
+		debugPrint(address);
+		debugPrint("!!");
 
 		digitalWrite(ERROR_LED, HIGH);
 		delay(1000);
@@ -165,10 +166,10 @@ void Hub::errorReport(int errorCode, int address)
 		return;
 
 	case 8:
-		Serial.println(" ");
-		Serial.print("ERROR 008!! Incorrect acknowledgement ping recieved from ");
-		Serial.print(address);
-		Serial.println("!!");
+		debugPrint(" ");
+		debugPrint("ERROR 008!! Incorrect acknowledgement ping recieved from ");
+		debugPrint(address);
+		debugPrint("!!");
 
 		digitalWrite(ERROR_LED, HIGH);
 		delay(1000);
@@ -177,8 +178,8 @@ void Hub::errorReport(int errorCode, int address)
 		return;
 
 	case 9:
-		Serial.println(" ");
-		Serial.println("ERROR 009!! Time out! No ping received!!");
+		debugPrint(" ");
+		debugPrint("ERROR 009!! Time out! No ping received!!");
 
 		digitalWrite(ERROR_LED, HIGH);
 		delay(1000);
@@ -187,8 +188,8 @@ void Hub::errorReport(int errorCode, int address)
 		return;
 
 	case 10:
-		Serial.println(" ");
-		Serial.println("ERROR 010!! Time out! No data received!!");
+		debugPrint(" ");
+		debugPrint("ERROR 010!! Time out! No data received!!");
 
 		digitalWrite(ERROR_LED, HIGH);
 		delay(1000);
@@ -197,13 +198,31 @@ void Hub::errorReport(int errorCode, int address)
 		return;
 
 	case 11:
-		Serial.println(" ");
-		Serial.println("ERROR 011!! Mesage not formated!!");
+		debugPrint(" ");
+		debugPrint("ERROR 011!! Mesage not formated!!");
 
 		digitalWrite(ERROR_LED, HIGH);
 		delay(2000);
 		digitalWrite(ERROR_LED, LOW);
 
 		return;
+	}
+}
+
+void Hub::debugPrint(String message)
+{
+	//If debugging has been enabled
+	if (debugMode == true)
+	{
+		Serial.println(message);
+	}
+}
+
+void Hub::debugPrint(float data)
+{
+	//If debugging has been enabled
+	if (debugMode == true)
+	{
+		Serial.println(data);
 	}
 }

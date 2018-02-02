@@ -48,13 +48,13 @@ bool Radio::sendData(float temperature, int motion, int toAddress, int fromAddre
 	//Will use "myAddress" as the from address if argument is left blank (it should be if we are NOT forwarding)
 	if (fromAddress == 0)
 	{
-		//Serial.println("Using myAddress");//Debug
+		systemP->debugPrint("Using myAddress");//Debug
 		//Pack the data into a single string
 		codedMessage = encodeMessage(temperature, motion, myAddress, toAddress);
 	}
 	else
 	{
-		//Serial.println("Using default");//Debug
+		systemP->debugPrint("Using default");//Debug
 		//Pack the data into a single string
 		codedMessage = encodeMessage(temperature, motion, fromAddress, toAddress);
 	}
@@ -66,10 +66,10 @@ bool Radio::sendData(float temperature, int motion, int toAddress, int fromAddre
 
 	radioP->flush_tx();
 
-	Serial.print("Sending to: ");//Debug only
-	Serial.println(toAddress);//Debug only
-	Serial.print("forwardAddress: ");//Debug only
-	Serial.println(forwardAddress);//Debug only
+	systemP->debugPrint("Sending to: ");//Debug only
+	systemP->debugPrint(toAddress);//Debug only
+	systemP->debugPrint("forwardAddress: ");//Debug only
+	systemP->debugPrint(forwardAddress);//Debug only
 
 	//If we are sending data to a "slave" hub, we need to let them know by sending a listening request
 	if (forwardAddress != 9001 && sentStandBy == false)
@@ -80,7 +80,7 @@ bool Radio::sendData(float temperature, int motion, int toAddress, int fromAddre
 
 	if (radioP->write(codedMessage.c_str(), MESSAGE_SIZE))
 	{
-		Serial.println("true");
+		systemP->debugPrint("true");
 		digitalWrite(DEBUG_LED, LOW);
 		radioP->txStandBy();
 		numOfRetries = 0;
@@ -91,7 +91,7 @@ bool Radio::sendData(float temperature, int motion, int toAddress, int fromAddre
 	{
 		if (numOfRetries < MAX_NUM_OF_RETRIES && requestSucceeded == true)
 		{
-			Serial.println("Trying again...");
+			systemP->debugPrint("Trying again...");
 			numOfRetries++;
 			delay(500);
 			sendData(temperature, motion, toAddress, fromAddress, forwardAddress);
@@ -111,7 +111,7 @@ bool Radio::sendData(float temperature, int motion, int toAddress, int fromAddre
 				//If we have ranout of address to try
 				if (forwardAddress > myAddress || forwardAddress == myAddress)
 				{
-					Serial.println("Failed: ranout of address");//Debug only
+					systemP->debugPrint("Failed: ranout of address");//Debug only
 					return false;
 				}
 
@@ -121,7 +121,7 @@ bool Radio::sendData(float temperature, int motion, int toAddress, int fromAddre
 				}
 				else
 				{
-					Serial.println("true");
+					systemP->debugPrint("true");
 					digitalWrite(DEBUG_LED, LOW);
 					radioP->txStandBy();
 					numOfRetries = 0;
@@ -137,7 +137,7 @@ bool Radio::sendData(float temperature, int motion, int toAddress, int fromAddre
 				//If we have ranout of address to try
 				if (forwardAddress < myAddress || forwardAddress == myAddress)
 				{
-					Serial.println("Failed: ranout of address");//Debug only
+					systemP->debugPrint("Failed: ranout of address");//Debug only
 					return false;
 				}
 
@@ -147,7 +147,7 @@ bool Radio::sendData(float temperature, int motion, int toAddress, int fromAddre
 				}
 				else
 				{
-					Serial.println("true");
+					systemP->debugPrint("true");
 					digitalWrite(DEBUG_LED, LOW);
 					radioP->txStandBy();
 					numOfRetries = 0;
@@ -177,7 +177,7 @@ bool Radio::receiveData()
 	radioP->startListening();
 
 	waitForData(-1);
-	//Serial.println(sizeof(codedMessageCStr));
+	systemP->debugPrint(sizeof(codedMessageCStr));
 	radioP->read(codedMessageCStr, MESSAGE_SIZE);
 
 	codedMessage = codedMessageCStr;
@@ -193,9 +193,9 @@ bool Radio::receiveData()
 
 		Serial.print(codedMessage);//Send to the command center
 
-		Serial.println(temp); //Debug only
-		Serial.println(motion);//Debug only
-		Serial.println(fromAddress);//Debuf only
+		systemP->debugPrint(temp); //Debug only
+		systemP->debugPrint(motion);//Debug only
+		systemP->debugPrint(fromAddress);//Debuf only
 	}
 	//If the data was NOT for us
 	else
@@ -233,10 +233,10 @@ bool Radio::sendRequest(int toAddress, char command, int forwardAddress, int fro
 
 	digitalWrite(DEBUG_LED, HIGH);
 
-	Serial.print("Sending to: ");//Debug only
-	Serial.println(toAddress);//Debug only
-	Serial.print("forwardAddress: ");//Debug only
-	Serial.println(forwardAddress);//Debug only
+	systemP->debugPrint("Sending to: ");//Debug only
+	systemP->debugPrint(toAddress);//Debug only
+	systemP->debugPrint("forwardAddress: ");//Debug only
+	systemP->debugPrint(forwardAddress);//Debug only
 
 	if (radioP->write(codedMessage.c_str(), MESSAGE_SIZE))
 	{
@@ -250,7 +250,7 @@ bool Radio::sendRequest(int toAddress, char command, int forwardAddress, int fro
 	{
 		if (numOfRetries < MAX_NUM_OF_RETRIES)
 		{
-			Serial.println("Trying request again...");
+			systemP->debugPrint("Trying request again...");
 			numOfRetries++;
 			delay(500);
 			sendRequest(toAddress, toUpperCase(command), forwardAddress);
@@ -265,12 +265,12 @@ bool Radio::sendRequest(int toAddress, char command, int forwardAddress, int fro
 				//Start working our way from the forwardAddress and finding a hub we can forward the message to
 				forwardAddress++;
 
-				//Serial.println("\n In num1!!");//Debug only
+				systemP->debugPrint("\n In num1!!");//Debug only
 
 				//If we have ranout of addresses to try
 				if (forwardAddress > myAddress || forwardAddress == myAddress)
 				{
-					Serial.println("Failed: ranout of address");//Debug only
+					systemP->debugPrint("Failed: ranout of address");//Debug only
 					return false;
 				}
 
@@ -280,7 +280,7 @@ bool Radio::sendRequest(int toAddress, char command, int forwardAddress, int fro
 				}
 				else
 				{
-					Serial.println("true");
+					systemP->debugPrint("true");
 					digitalWrite(DEBUG_LED, LOW);
 					radioP->txStandBy();
 					numOfRetries = 0;
@@ -292,12 +292,12 @@ bool Radio::sendRequest(int toAddress, char command, int forwardAddress, int fro
 				//Start working our way from the forwardAddress and finding a hub we can forward the message to
 				forwardAddress--;
 
-				//Serial.println("\n In num2!!");//Debug only
+				systemP->debugPrint("\n In num2!!");//Debug only
 
 				//If we have ranout of addresses to try
 				if (forwardAddress < myAddress || forwardAddress == myAddress)
 				{
-					Serial.println("Failed: ranout of address");//Debug only
+					systemP->debugPrint("Failed: ranout of address");//Debug only
 					return false;
 				}
 
@@ -307,7 +307,7 @@ bool Radio::sendRequest(int toAddress, char command, int forwardAddress, int fro
 				}
 				else
 				{
-					Serial.println("true");
+					systemP->debugPrint("true");
 					digitalWrite(DEBUG_LED, LOW);
 					radioP->txStandBy();
 					numOfRetries = 0;
@@ -323,7 +323,7 @@ bool Radio::sendRequest(int toAddress, char command, int forwardAddress, int fro
 		else
 		{
 			//systemP->errorReport(3, toAddress);
-			Serial.println("Failed");
+			systemP->debugPrint("Failed");
 			digitalWrite(DEBUG_LED, LOW);
 			numOfRetries = 0;
 			return false;
@@ -349,15 +349,15 @@ char Radio::waitForRequest()
 		//radioP->openReadingPipe(0, myAddress); //must be set to receiver's address. Will only receive data from hubs that have opened writing pipes to this address
 		//radioP->startListening();
 
-		Serial.println("Waiting for request...");
+		systemP->debugPrint("Waiting for request...");
 		waitForData(-1);
-		Serial.println("Got...");
+		systemP->debugPrint("Got...");
 
 		radioP->read(codedMessageCStr, MESSAGE_SIZE);
 
 		codedMessage = codedMessageCStr;
 
-		//Serial.println(codedMessage);//Debug
+		systemP->debugPrint(codedMessage);//Debug
 
 		decodeMessage(fromAddress, command, toAddress, codedMessage);
 
@@ -370,10 +370,10 @@ char Radio::waitForRequest()
 		else
 		{
 			//Forward the request
-			Serial.println("Forwarding...");
+			systemP->debugPrint("Forwarding...");
 			sendRequest(toAddress, 'D', 0, fromAddress);
 			
-			Serial.println("Done forwarding");//Debug only
+			systemP->debugPrint("Done forwarding");//Debug only
 			
 			radioP->openReadingPipe(0, myAddress); //must be set to receiver's address. Will only receive data from hubs that have opened writing pipes to this address
 			radioP->startListening();
@@ -398,15 +398,15 @@ bool Radio::startupPings()
 
 			if (sendPing(i) == true && receiveAcknowledge(i) == true)
 			{
-				Serial.println("Successful contact with hub ");//debug only
-				Serial.println(debug);//debug only
+				systemP->debugPrint("Successful contact with hub ");//debug only
+				systemP->debugPrint(debug);//debug only
 			}
 		}
 
 	}
 	else
 	{
-		Serial.println("Waiting for pings...");//debug only
+		systemP->debugPrint("Waiting for pings...");//debug only
 		pingsSuccess = receivePing();
 	}
 
@@ -427,10 +427,10 @@ String Radio::encodeMessage(float temperature, int motion, int fromAddress, int 
 	*/
 
 
-	/*Serial.println(temperature); //Debug only
-	Serial.println(motion);//Debug only
-	Serial.println(fromAddress);//Debug only
-	Serial.println(toAddress); //Debug only*/
+	/*systemP->debugPrint(temperature); //Debug only
+	systemP->debugPrint(motion);//Debug only
+	systemP->debugPrint(fromAddress);//Debug only
+	systemP->debugPrint(toAddress); //Debug only*/
 
 	if ((fromAddress < 9001 || fromAddress > 9999) || (motion < 0 || motion > 9999) || (temperature < 0 || temperature > 9999) || (toAddress < 9001 || toAddress > 9999))
 	{
@@ -487,7 +487,7 @@ String Radio::encodeMessage(float temperature, int motion, int fromAddress, int 
 
 	messageToReturn = message;
 
-	Serial.println(message);//debug only
+	systemP->debugPrint(message);//debug only
 
 	return messageToReturn;
 }
@@ -543,7 +543,7 @@ String Radio::encodeMessage(char command, int toAddress, int fromAddress)
 
 	messageToReturn = message;
 
-	Serial.println(messageToReturn);//Debug only
+	systemP->debugPrint(messageToReturn);//Debug only
 
 	return messageToReturn;
 }
@@ -572,13 +572,13 @@ bool Radio::decodeMessage(float &temperature, int &motion, int &fromAddress, int
 	//Get fromAddress data
 	while (message[indx] != '-')
 	{
-		//Serial.println(message[indx]);
+		systemP->debugPrint(message[indx]);
 		stringHolder += message[indx];
 		indx++;
 	}
 
 	fromAddress = atoi(stringHolder.c_str()); //Convert string into int
-	//Serial.println(fromAddress);//debug only
+	systemP->debugPrint(fromAddress);//debug only
 	indx++;
 
 	stringHolder = "";
@@ -700,7 +700,7 @@ bool Radio::isValidMessage(const String &codedMessage, bool isLargeMessage)
 	unsigned int spacerCount = 0;
 	unsigned int maxNumOfSpacers = 0;
 
-	Serial.println(codedMessage);
+	systemP->debugPrint(codedMessage);
 
 	if (isLargeMessage)
 	{
@@ -751,12 +751,12 @@ bool Radio::receivePing()
 
 		if (waitForData(-1))
 		{
-			Serial.println("Receiving Data..."); //debug only
+			systemP->debugPrint("Receiving Data..."); //debug only
 			radioP->read(&toAddress, sizeof(toAddress));
 		}
 		/*else if (millis() > targetTime)
 		{
-			//Serial.println("ERROR!!!");
+			systemP->debugPrint("ERROR!!!");
 			systemP->errorReport(9);
 		}*/
 
@@ -780,7 +780,7 @@ bool Radio::receivePing()
 			radioP->stopListening();
 			radioP->openWritingPipe(range[0]);
 
-			Serial.println("Sending Ping back..."); //debug only
+			systemP->debugPrint("Sending Ping back..."); //debug only
 
 			if (radioP->write(&myAddress, sizeof(myAddress)))
 			{
@@ -788,7 +788,7 @@ bool Radio::receivePing()
 			}
 			else
 			{
-				//Serial.println("ERROR!!!");
+				systemP->debugPrint("ERROR!!!");
 				systemP->errorReport(3, range[0]);
 			}
 		}
@@ -805,8 +805,8 @@ bool Radio::sendPing(int index)
 	bool didSend = false;
 	numOfRetries = 0;
 
-	Serial.println(" ");//debug only
-	Serial.println("Sending pings...");//debug only
+	systemP->debugPrint(" ");//debug only
+	systemP->debugPrint("Sending pings...");//debug only
 
 	radioP->stopListening();
 	radioP->openWritingPipe(range[index]);
@@ -888,19 +888,19 @@ bool Radio::receiveAcknowledge(int index)
 
 		if (data == acknowledgerAddress)
 		{
-			Serial.println("Received acknowledge...");//debug only
+			systemP->debugPrint("Received acknowledge...");//debug only
 			didAcknowledge = true;
 		}
 		else
 		{
-			//Serial.println("ERROR!!! Incorrect acknowledgement ping recieved");
+			systemP->debugPrint("ERROR!!! Incorrect acknowledgement ping recieved");
 			systemP->errorReport(8, acknowledgerAddress); //Report that we got the wrong data back
 			didAcknowledge = false;
 		}
 	}
 	else if (millis() > targetTime)///we went over time, report it
 	{
-		//Serial.println("ERROR!!! No acknowledgement ping recieved");
+		systemP->debugPrint("ERROR!!! No acknowledgement ping recieved");
 		systemP->errorReport(7, acknowledgerAddress);
 		didAcknowledge = false;
 	}
