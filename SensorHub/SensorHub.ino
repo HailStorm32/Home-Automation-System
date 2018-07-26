@@ -68,7 +68,7 @@ void setup()
 	bool dataRecived = false;
 	String request = "";
 
-	Serial.flush();
+	//Serial.flush();
 
 	//Get info from the command center on if we should do pings
 	/*while(!dataRecived)
@@ -128,11 +128,11 @@ void setup()
 void loop()
 {
 	String request;
-
+	
 	hubSystem.debugPrint("VVVV");
 	//hubSystem.debugPrint(codedMessage2);
 	hubSystem.debugPrint("___________________");
-
+	
 	float temperature = 0;
 	int motion = 0;
 	int fromAddress = 0;
@@ -172,6 +172,15 @@ void loop()
 					hubSystem.debugPrint(" ");
 				}
 				return;
+			case 9006:
+				if (mainRadio.sendRequest(9006, 'S'))
+				{
+					hubSystem.debugPrint("9006:");
+					mainRadio.receiveData();
+					hubSystem.debugPrint("___________________");
+					hubSystem.debugPrint(" ");
+				}
+				return;
 			}
 		}
 		//IF not master hub
@@ -184,7 +193,7 @@ void loop()
 				mainRadio.sendData(dht.convertCtoF(dht.readTemperature()), 4, 9001);
 				command = ' ';
 			}
-			else if (command == 'F')
+			else if (command == 'R')
 			{
 				mainRadio.receiveData();
 				command = ' ';

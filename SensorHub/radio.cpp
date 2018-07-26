@@ -34,7 +34,7 @@ Radio::Radio(const int myAddress, const int range[], RF24* radioPointer, Hub* sy
 	}
 }
 
-bool Radio::sendData(float temperature, int motion, int toAddress, int fromAddress, int forwardAddress)
+bool Radio::sendData(float temperature, int motion, int toAddress, int fromAddress, int forwardAddress, bool tryForwarding)
 {
 	String codedMessage;
 	static bool sentStandBy = false;
@@ -74,10 +74,11 @@ bool Radio::sendData(float temperature, int motion, int toAddress, int fromAddre
 	//If we are sending data to a "slave" hub, we need to let them know by sending a listening request
 	if (forwardAddress != 9001 && sentStandBy == false)
 	{
-		requestSucceeded = sendRequest(forwardAddress, 'F', 0, 0, false);
+		requestSucceeded = sendRequest(forwardAddress, 'R', 0, 0, false); //Let them know they will be reciving information
 		sentStandBy = true;
 	}
 
+	//Send the data
 	if (radioP->write(codedMessage.c_str(), MESSAGE_SIZE))
 	{
 		systemP->debugPrint("true");
@@ -94,10 +95,10 @@ bool Radio::sendData(float temperature, int motion, int toAddress, int fromAddre
 			systemP->debugPrint("Trying again...");
 			numOfRetries++;
 			delay(500);
-			sendData(temperature, motion, toAddress, fromAddress, forwardAddress);
+			sendData(temperature, motion, toAddress, fromAddress, forwardAddress, false);
 		}
 		//If sending still failed, try forwarding to other hubs
-		else if (numOfRetries >= MAX_NUM_OF_RETRIES || requestSucceeded == false)
+		else if ((numOfRetries >= MAX_NUM_OF_RETRIES || requestSucceeded == false) && tryForwarding == true)
 		{
 			numOfRetries = 0;
 			sentStandBy = false; //Reset the flag because we are going to be sending to another address
@@ -132,6 +133,7 @@ bool Radio::sendData(float temperature, int motion, int toAddress, int fromAddre
 			{
 				//Start working our way from the forwardAddress and finding a hub we can forward the message to
 				forwardAddress--;
+
 				sentStandBy = false; //Reset the flag because we are going to be sending to another address
 
 				//If we have ranout of address to try
@@ -191,7 +193,7 @@ bool Radio::receiveData()
 
 		radioP->closeReadingPipe(0);
 
-		Serial.print(codedMessage);//Send to the command center
+		Serial.print(codedMessage);//Send to the command center //Shouldbe without a 'newline'
 
 		systemP->debugPrint(temp); //Debug only
 		systemP->debugPrint(motion);//Debug only
@@ -253,19 +255,17 @@ bool Radio::sendRequest(int toAddress, char command, int forwardAddress, int fro
 			systemP->debugPrint("Trying request again...");
 			numOfRetries++;
 			delay(500);
-			sendRequest(toAddress, toUpperCase(command), forwardAddress);
+			sendRequest(toAddress, toUpperCase(command), forwardAddress, 0, false);
 		}
 		//If sending still failed, try forwarding to other hubs
-		else if (numOfRetries >= MAX_NUM_OF_RETRIES && tryForwarding == true)
+		if (tryForwarding == true) //numOfRetries >= MAX_NUM_OF_RETRIES && 
 		{
 			numOfRetries = 0;
 
-			if (toAddress < myAddress && (forwardAddress != myAddress))
+			if (toAddress < myAddress)// && (forwardAddress != myAddress))
 			{
 				//Start working our way from the forwardAddress and finding a hub we can forward the message to
 				forwardAddress++;
-
-				systemP->debugPrint("\n In num1!!");//Debug only
 
 				//If we have ranout of addresses to try
 				if (forwardAddress > myAddress || forwardAddress == myAddress)
@@ -292,8 +292,6 @@ bool Radio::sendRequest(int toAddress, char command, int forwardAddress, int fro
 				//Start working our way from the forwardAddress and finding a hub we can forward the message to
 				forwardAddress--;
 
-				systemP->debugPrint("\n In num2!!");//Debug only
-
 				//If we have ranout of addresses to try
 				if (forwardAddress < myAddress || forwardAddress == myAddress)
 				{
@@ -315,14 +313,14 @@ bool Radio::sendRequest(int toAddress, char command, int forwardAddress, int fro
 				}
 			}
 
-			systemP->errorReport(3, toAddress);
+			systemP->errorReport(3, forwardAddress);
 			digitalWrite(DEBUG_LED, LOW);
 			numOfRetries = 0;
 			return false;
 		}
 		else
 		{
-			//systemP->errorReport(3, toAddress);
+			systemP->errorReport(3, forwardAddress);
 			systemP->debugPrint("Failed");
 			digitalWrite(DEBUG_LED, LOW);
 			numOfRetries = 0;
@@ -371,7 +369,7 @@ char Radio::waitForRequest()
 		{
 			//Forward the request
 			systemP->debugPrint("Forwarding...");
-			sendRequest(toAddress, 'D', 0, fromAddress);
+			sendRequest(toAddress, command, 0, fromAddress);
 			
 			systemP->debugPrint("Done forwarding");//Debug only
 			

@@ -28,7 +28,7 @@ public:
 		False -- if failed
 		True -- if succeeded
 	*/
-	bool sendData(float temperature, int motion, int toAddress, int fromAddress = 0, int forwardAddress = 0);
+	bool sendData(float temperature, int motion, int toAddress, int fromAddress = 0, int forwardAddress = 0, bool tryForwarding = true);
 
 	/*
 	Input:
@@ -83,6 +83,7 @@ public:
 		Command
 		-- char 'F' forward message
 		-- char 'S' send back a sensor data
+		-- char 'R' Recieve data
 		fromAddress -- 9001-9008
 		toAddress -- 9001-9008
 	Returns:

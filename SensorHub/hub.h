@@ -58,7 +58,7 @@ public:
 	Input:
 		data (I) -- float data to print
 	*/
-	void debugPrint(float data);
+	void debugPrint(int data);
 
 private:
 	int temperature;

@@ -218,7 +218,7 @@ void Hub::debugPrint(String message)
 	}
 }
 
-void Hub::debugPrint(float data)
+void Hub::debugPrint(int data)
 {
 	//If debugging has been enabled
 	if (debugMode == true)
