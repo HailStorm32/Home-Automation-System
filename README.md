@@ -3,12 +3,17 @@ INTRO
 This repository holds the code for a home automation system that I am creating from scratch using Arduino. This README will explain more details about this project, and how to get it running.
 ><i>This project is being developed on my free time, so development will be slow.</i>
 
+
 <br>
 
 #### Project Goal:
 My goal is to create a cheaper (and possibly better) alternative to home automation systems on the market.
 
-The system will consist of sensor hubs (or stations) that will be placed in each room of a house. Each hub will report wirelessly to the main hub which will compile all of the data and broadcast it on a secure server that the home owner can access to view and control temperature, room activity, etc. 
+The system will consist of sensor hubs (or stations) that will be placed in each room of a house. Each hub will report wirelessly to the main hub which will compile all of the data and broadcast it on a secure server that the homeowner can access to view and control temperature, room activity, etc. 
+
+<img src="https://i.imgur.com/FvHtHOC.jpg" alt="HAS board development"></img>
+><i><b>Top:</b> Breadboarded HAS board <b>Bottom:</b> v1 of HAS PCB</i>
+
 
 <br>
 
@@ -33,11 +38,11 @@ Each sensor hub will consist of the following:
 ##### Server:
 The server/main hub will likely consist of the following:
 ><i>The server/main hub has not been developed, so all of these items are just ideas and may change.</i>
-><i>The server/main hub will not be started on until the sensor hub has reach about 75% completion.</i>
+><i>The server/main hub will not be started until the sensor hub has reached about 75% completion.</i>
 
 
 <ul>
-    <li><a href="http://www.newegg.com/Product/Product.aspx?Item=N82E16813455003">Humming Board i2eX</a>(or similar) running Ubuntu</li>
+    <li>Raspberry Pi running Arch</li>
     <li>More to come...</li>
 </ul>
 
@@ -52,7 +57,7 @@ To program the sensor hubs I am using Microsoft Visual Studio Community 2015 wit
 <ol>
     <li><a href="https://go.microsoft.com/fwlink/?LinkId=691978&clcid=0x409">Download VS Community 2015</a></li>
     <li>Download/Install <a href="http://www.visualmicro.com/page/Arduino-Visual-Studio-Downloads.aspx">Visual Micro extension</a></li>
-    <li>Dowload and install the Arduino IDE <i>(Visual Micro uses some of its libraries)</i></li>
+    <li>Download and install the Arduino IDE <i>(Visual Micro uses some of its libraries)</i></li>
     <li>Put the folder(s) that are in the "Libraries" folder into Arduino's Libraries folder.</li>
 </ol>
 
@@ -60,6 +65,9 @@ To program the sensor hubs I am using Microsoft Visual Studio Community 2015 wit
 
 ##### Wiring Schematic:
 The wiring schematic for this project can be found <a href="http://www.schematics.com/project/home-automation-system-35296/">here</a>.
+
+###### PCB Files v1
+Eagle CAD board and schematic files can be found <a href="https://drive.google.com/drive/folders/1upeD6Ly29SMLrQmRa750bNDWt7U-4B42?usp=sharing">here</a>.
 
 <br>
 
