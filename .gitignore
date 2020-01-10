@@ -49,6 +49,16 @@ CommandCenter/CommandCenter/x64/*
 CommandCenter/CommandCenter/*.vcxproj*
 CommandCenter/x64/Debug/*
 
+#bin files
+*.o
+*.d
+*.map
+*.listing
+*symbol
+*.eep
+*.a
+*.elf
+*.hex
 
 # =========================
 # Operating System Files

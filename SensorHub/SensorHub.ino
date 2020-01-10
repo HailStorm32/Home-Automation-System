@@ -8,201 +8,106 @@
 //																							    //
 //**********************************************************************************************//
 
-#include <SPI.h>
-#include "nRF24L01.h"
+#include "SPI.h"
 #include <RF24.h>
 #include <DHT.h>
-#include "hub.h"
-#include "radio.h"
-#include "Init_Functions.h"
+#include "include/functions.h"
 
 #define DHTPIN 6     // Define what digital pin the temp sensor is connected to
 #define DHTTYPE DHT11  //Define the type of temp sensor we are useing
 
 RF24 radio(9, 10); //Set what pins the radio are in
-
 DHT dht(DHTPIN, DHTTYPE); // Initialize temp sensor
 
-const int MY_ADDRESS = setAddress();
-const int RANGE[5] = { giveRange(1, MY_ADDRESS), giveRange(2, MY_ADDRESS), giveRange(3, MY_ADDRESS), giveRange(4, MY_ADDRESS), giveRange(5, MY_ADDRESS) };
-
-Hub hubSystem(DEBUG_MODE);
-
-Radio mainRadio(MY_ADDRESS, RANGE, &radio, &hubSystem);
-
-bool pingStatus = false;//debug only
-
-
+const byte DEFAULT_ADDR = 2;//Address Min:2 Max:255
+const byte NUM_OF_ADDRESSES = 32;
+const byte STATUS_LED = 8;
+const byte ERROR_LED = 7;
+byte addresses[NUM_OF_ADDRESSES] = {};//hub's address allways at [0] and server's at [31]
+byte myAddress = 0;
+byte serverAddr = 0;
+bool hasDoneSetup = false;
+char testing[20] = {};
 
 void setup()
 {
-	Serial.begin(9600); 
-
-	hubSystem.debugPrint("in setup");
-
-	//Startup radio and temperature sensors
-	radio.begin();
+    Serial.begin(9600);//For testing
+    pinMode(2, INPUT);//For testing
+    pinMode(STATUS_LED, OUTPUT);
+    pinMode(ERROR_LED, OUTPUT);
+    
+    //Startup radio and temperature sensors
+    radio.begin();
 	delay(200);
 	dht.begin();
+  
+    for(int indx  = 0; indx < NUM_OF_ADDRESSES; indx++)
+    {
+        addresses[indx] = 0;
+    }
+    
+    myAddress = DEFAULT_ADDR;
 
-	//Set pin modes
-	pinMode(SWITCH_IN_1, INPUT);
-	pinMode(SWITCH_IN_2, INPUT);
-	pinMode(SWITCH_IN_3, INPUT);
-	pinMode(PIR, INPUT);
-	pinMode(ERROR_LED, OUTPUT);
-	pinMode(DEBUG_LED, OUTPUT);
+    //TODO check storage to see it we have already done settup
+    //currently using an external btn as current boards dont have storage
+    if(digitalRead(2) == HIGH)
+    {
+        Serial.println("have been in setup");
+        hasDoneSetup = true;
+        
+        //TODO get myAddress and address array from storage
+        //currently using pre set values as current board dont have storage
+        addresses[0] = 2;
+        addresses[1] = 3;
 
-	digitalWrite(DEBUG_LED, HIGH); //Show that we have entered the "setup" stage
+        myAddress = addresses[0];
 
-	//Radio setup stuff
-	radio.setPALevel(RF24_PA_MAX);
-	if (!radio.setDataRate(RF24_250KBPS))
-	{
-		hubSystem.debugPrint("FAILED TO SET DATA RATE!!!");
-	}
-	radio.setChannel(124); 
+        String message;
+        for(byte indx = 0; indx < 32; indx++)
+        {
+            message[indx] = '%';
+        }
 
-	int targetTime = millis() + 2000;
-	bool doPings = true;
-	bool dataRecived = false;
-	String request = "";
+        message = packMessage("SDH",134, 53,754.43,1332683);
 
-	//Serial.flush();
+        Serial.println("Message: ");
+        Serial.print(message);
 
-	//Get info from the command center on if we should do pings
-	/*while(!dataRecived)
-	{
-		//We have gone 2sec with no instructions from the command center, do pings anyway
-		if (millis() >= targetTime)
-		{
-			//digitalWrite(ERROR_LED, HIGH);
-			doPings = true;
-			dataRecived = false;
-			break;
-		}
+    }
+    else
+    {
+        Serial.println("havnt been in setup");
+        radio.openReadingPipe(1,myAddress);
+        radio.startListening();
 
-		if (Serial.available() > 0)
-		{
-			request = Serial.readString();
-			
-			if (request == "true")
-			{
-				doPings = true;
-			}
-			else if (request == "false")
-			{
-				doPings = false;
-			}
-			dataRecived = true;
-		}
-	}*/
+        digitalWrite(STATUS_LED, HIGH);
 
-	doPings = false;//Debug Only
+        while(!radio.available())
+        {}
+        
+        digitalWrite(STATUS_LED, LOW);
 
-	if (doPings)
-	{
-		pingStatus = mainRadio.startupPings();
-	}
-	else
-	{
-		pingStatus = false;
-	}
+        radio.read(&addresses, NUM_OF_ADDRESSES);
+        //TODO store the array we received into storage
 
-	digitalWrite(DEBUG_LED, LOW); //Show that we have exited the "setup" stage
+        myAddress = addresses[0];
+        serverAddr = addresses[31];
 
-	///Debug StuffVVV
-	hubSystem.debugPrint("Ping status: ");
-	hubSystem.debugPrint(pingStatus);
+        Serial.println("received:");
 
-	hubSystem.debugPrint("/////////////////////");
-	hubSystem.debugPrint("My Address: ");
-	hubSystem.debugPrint(MY_ADDRESS);
-	hubSystem.debugPrint("Read Range:");
-	for (int i = 0; i <= 4; i++)
-	{
-		hubSystem.debugPrint(RANGE[i]);
-	}
+        for(int i =0; i < NUM_OF_ADDRESSES; i++)
+        {
+            Serial.println(addresses[i]);
+        }
+        
+        //Start placement mode
+        placementMode(addresses, &radio); 
+        
+    }
+
 }
 
 void loop()
 {
-	String request;
-	
-	hubSystem.debugPrint("VVVV");
-	//hubSystem.debugPrint(codedMessage2);
-	hubSystem.debugPrint("___________________");
-	
-	float temperature = 0;
-	int motion = 0;
-	int fromAddress = 0;
-	int toAddress = 0;
-	char command = ' ';
-
-	while (true)
-	{
-		if (MY_ADDRESS == 9001)
-		{
-			if (Serial.available() > 0)
-			{
-				request = Serial.readString();
-			}
-
-			switch (atoi(request.c_str()))
-			{
-			case 9001:
-				Serial.print(mainRadio.encodeMessage(dht.convertCtoF(dht.readTemperature()), 4, MY_ADDRESS, 9001)); 
-
-				return;
-			case 9002:
-				if (mainRadio.sendRequest(9002, 'S'))
-				{
-					hubSystem.debugPrint("9002:");
-					mainRadio.receiveData();
-					hubSystem.debugPrint("___________________");
-					hubSystem.debugPrint(" ");
-				}
-				return;
-			case 9003:
-				if (mainRadio.sendRequest(9003, 'S'))
-				{
-					hubSystem.debugPrint("9003:");
-					mainRadio.receiveData();
-					hubSystem.debugPrint("___________________");
-					hubSystem.debugPrint(" ");
-				}
-				return;
-			case 9006:
-				if (mainRadio.sendRequest(9006, 'S'))
-				{
-					hubSystem.debugPrint("9006:");
-					mainRadio.receiveData();
-					hubSystem.debugPrint("___________________");
-					hubSystem.debugPrint(" ");
-				}
-				return;
-			}
-		}
-		//IF not master hub
-		else
-		{
-			command = mainRadio.waitForRequest();
-
-			if (command == 'S')
-			{
-				mainRadio.sendData(dht.convertCtoF(dht.readTemperature()), 4, 9001);
-				command = ' ';
-			}
-			else if (command == 'R')
-			{
-				mainRadio.receiveData();
-				command = ' ';
-			}
-			
-		}
-
-		request = "";
-	}
-
-
+    
 }
