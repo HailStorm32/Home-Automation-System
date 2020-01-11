@@ -59,6 +59,7 @@ CommandCenter/x64/Debug/*
 *.a
 *.elf
 *.hex
+*.txt
 
 # =========================
 # Operating System Files

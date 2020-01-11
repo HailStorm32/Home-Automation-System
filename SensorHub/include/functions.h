@@ -20,11 +20,160 @@ void placementMode(byte *addresses, RF24 *radioP)
 {
     byte myAddress = addresses[0];
     byte serverAddr = addresses[31];
+    byte indx = 0;
+    byte startIndx;
+    byte numOfSpacers = 0;
+    char packedReply[32] = {};
+    String command;
+    String message;
+    bool messageSent = false;
+    bool timeOut = false;
+    bool receivedReply = false;
     
+
     radioP->stopListening();
+    radioP->flush_tx();
     radioP->openWritingPipe(serverAddr);
     radioP->openReadingPipe(1, myAddress);
 
+    message = packMessage("P", serverAddr, myAddress, 0, 0); 
+   
+    while(digitalRead(SET_BTN) == LOW || receivedReply != true)
+    {
+        indx = 1;
+        numOfSpacers = 0;
+        command = "";
+        messageSent = false;
+        timeOut = false;
+        radioP->stopListening();
+        radioP->flush_tx();
+    
+        if(!radioP->write(message.c_str(), 32))
+        {
+            radioP->txStandBy();
+            //Try and forward to other addresses
+            while(addresses[indx] != 0 && addresses[indx] != serverAddr)
+            {
+                radioP->openWritingPipe(addresses[indx]);
+
+                if(radioP->write(message.c_str(), 32))
+                {
+                    radioP->txStandBy();
+                    messageSent = true;
+                    break;
+                }
+                radioP->txStandBy();
+                indx++;
+            }
+            radioP->openWritingPipe(serverAddr);
+            indx = 0;
+        }
+        else
+        {
+            Serial.println("First try");
+            messageSent =  true;
+        }
+
+        //Wait for a reply only if we were able to send the message
+        if(messageSent)
+        {
+            receivedReply = false;
+            long unsigned int endTime = 0; 
+            radioP->startListening();
+
+            endTime = millis() + 1000;
+
+            Serial.println("Waiting..");
+            while(!radioP->available())
+            {
+                if(millis() >= endTime)
+                {
+                    timeOut = true;
+                    break;
+                }
+            }
+
+            if(radioP->available() && timeOut == false)
+            {
+                radioP->read(&packedReply,32);
+                Serial.println("Received reply"); 
+                //Get the index of the spacer before the command
+                while(numOfSpacers != 1 && indx < 32)
+                {
+                    if(packedReply[indx] == '-')
+                    {
+                        numOfSpacers++;
+                    }
+                    else
+                    {
+                        indx++;
+                    }
+                }
+
+                indx++;
+                
+                //Store the command
+                startIndx = indx;
+                for(byte indx2 = startIndx; packedReply[indx2] != '-';
+                        indx2++)
+                {
+                    command += packedReply[indx2];
+                }
+                Serial.println(command);        
+                //Verify the command
+                if(command == "PR")
+                {
+                    Serial.println("Verified");
+                    digitalWrite(ERROR_LED, LOW);
+                    digitalWrite(STATUS_LED, HIGH);
+                    receivedReply = true;
+                }
+            }
+            else
+            {
+                radioP->flush_rx();
+            }
+
+            if(receivedReply == false)
+            {
+                Serial.println("Did not receive reply");
+                digitalWrite(ERROR_LED, HIGH);
+                digitalWrite(STATUS_LED, LOW);
+            }
+        }
+        else
+        {
+            Serial.println("Could not send");
+            digitalWrite(ERROR_LED, HIGH);
+            digitalWrite(STATUS_LED, LOW);
+            receivedReply = false;
+        }
+    }
+    
+    radioP->openWritingPipe(serverAddr);
+    radioP->stopListening();
+    radioP->flush_tx();
+
+    message = packMessage("PD", serverAddr, myAddress, 0, 0); 
+
+    radioP->write(message.c_str(), 32);
+    radioP->txStandBy();
+    
+    digitalWrite(ERROR_LED, LOW);
+    digitalWrite(STATUS_LED, LOW);
+    delay(300);
+
+    digitalWrite(STATUS_LED, HIGH);
+    delay(500);
+    digitalWrite(STATUS_LED, LOW);
+    delay(700);
+    digitalWrite(STATUS_LED, HIGH);
+    delay(500);
+    digitalWrite(STATUS_LED, LOW);
+    delay(700);
+    digitalWrite(STATUS_LED, HIGH);
+    delay(500);
+    digitalWrite(STATUS_LED, LOW);
 }
 
 
@@ -83,10 +232,21 @@ String packMessage(String command, byte targetAddr, byte senderAddr,
 
     //Add command to message array
     indxStart = indxCounter; 
-    for(byte indx = 0; indx < command.length(); indx++)
+    if(command.length() >= 3)
     {
-        packedMsg[indx + indxStart] = command[indx];
-        indxCounter++;
+        for(byte indx = 0; indx < 3; indx++)
+        {
+            packedMsg[indx + indxStart] = command[indx];
+            indxCounter++;
+        }
+    }
+    else
+    {
+        for(byte indx = 0; indx < command.length(); indx++)
+        {
+            packedMsg[indx + indxStart] = command[indx];
+            indxCounter++;
+        }
     }
 
     //Add spacer and inciment our postion in the array
