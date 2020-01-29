@@ -154,10 +154,8 @@ void loop()
                 {
                     while(true)
                     {
-                        digitalWrite(ERROR_LED, HIGH);
                         digitalWrite(STATUS_LED, HIGH);
                         delay(500);
-                        digitalWrite(ERROR_LED, LOW);
                         digitalWrite(STATUS_LED, LOW);
                         delay(700);
                     }

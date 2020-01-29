@@ -1,7 +1,10 @@
+#include <Wire.h>
+
 String packMessage(String command, byte targetAddr, byte senderAddr,
         float tempData, int motionData);
 void placementMode(byte *addresses, RF24 *radioP);
-
+void eepromWriteSingle(byte data, int memAddr);
+byte eepromReadSingle(int memAddr);
 
 
 //=======================================================================
@@ -38,7 +41,7 @@ void placementMode(byte *addresses, RF24 *radioP)
 
     message = packMessage("P", serverAddr, myAddress, 0, 0); 
    
-    while(digitalRead(SET_BTN) == LOW || receivedReply != true)
+    while(digitalRead(SET_BTN) == HIGH || receivedReply != true)
     {
         indx = 1;
         numOfSpacers = 0;
@@ -320,4 +323,51 @@ String packMessage(String command, byte targetAddr, byte senderAddr,
     packedStr = packedMsg;
 
     return packedStr;
+}
+
+
+//=====================================================================
+//Description: writes a byte of data to the given address of the 
+//  external eeprom
+//
+//Arguments:
+//  (IN) data -- byte of data to write
+//  (IN) memAddr -- memory address of cell to write to
+//
+//Return:
+//  void
+//======================================================================
+void eepromWriteSingle(byte data, int memAddr)
+{
+    Wire.begin();
+   
+    Wire.beginTransmission(EEPROM_ADDR);
+    Wire.write(memAddr);
+    Wire.write(data);
+    Wire.endTransmission();
+    delay(5);
+}
+
+
+//======================================================================
+//Description: reads a single byte from the given cell address of the
+//  external eeprom
+//
+//Arguments:
+//  (IN) memAddr -- memory address of cell to read from
+//
+//Return:
+//  byte -- the byte read from the given cell
+//=======================================================================
+byte eepromReadSingle(int memAddr)
+{
+    Wire.begin();
+    
+    Wire.beginTransmission(EEPROM_ADDR);
+    Wire.write(memAddr);
+    Wire.endTransmission();
+   
+    Wire.requestFrom(EEPROM_ADDR,(byte)1);
+    
+    return Wire.read();
 }
