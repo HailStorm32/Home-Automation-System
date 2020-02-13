@@ -1,0 +1,6 @@
+[submodule "CommandCenter/contrib/arduinolibs"]
+	path = CommandCenter/contrib/arduinolibs
+	url = https://github.com/rweather/arduinolibs.git
+[submodule "CommandCenter/contrib/RF24"]
+	path = CommandCenter/contrib/RF24
+	url = https://github.com/nRF24/RF24.git

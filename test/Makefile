@@ -65,7 +65,7 @@ OSNAME =	$(shell uname)
 
 # Name of the program and source .ino (previously .pde) file.
 # No extension here (e.g. PROJECT = Blink).
-PROJECT ?=	SensorHub
+PROJECT ?=	tempServerTest
 
 # Project version. Only used for packing the source into an archive.
 VERSION ?=	1.0
