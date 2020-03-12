@@ -38,7 +38,7 @@ TARGET=arm-linux-gnueabihf-
 CXX=$(TARGET)g++
 CC=$(TARGET)gcc
 CXXFLAGS=-std=c++17 -g -I$(IDIR) -I$(WIR_PI_DIR) -I$(ARDUINO_AES_DIR) \
-		 -I$(RF24_LIB_DIR)
+		 -I$(RF24_LIB_DIR) -I/usr/arm-linux-gnueabihf/include/mysql
 LDFLAGS= -L$(WIR_PI_DIR) -lwiringPi $(PI_LIBS) -L$(ARDUINO_CRYP_MAKE) -lCrypto \
 		 -L$(RF24_LIB_DIR) -lrf24 \
 		 -L/usr/arm-linux-gnueabihf/include/mysql -lmysqlclient
