@@ -10,6 +10,7 @@ $RECYCLE.BIN/
 
 #Custom
 config.h
+CommandCenter
 
 # Windows Installer files
 *.cab

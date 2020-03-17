@@ -27,6 +27,7 @@ int main()
     bool exitFlag = false;
     int menuItemNum;
     int genIndx = 0;
+    int numOfSetupHubs;
     string userEntry = "";
     string sqlQuery;
     bool haveAddrs;
@@ -72,63 +73,56 @@ int main()
             DB_PASS.c_str(), DB_NAME.c_str(), 8080, NULL, 0))
     {
         std::cout << "\nERROR: Cant connect to SQL database!" << std::endl;
+        std::cout << mysql_error(sqlConn) << endl;
         mysql_close(sqlConn);
         return 1;
     }
 
     //Check to see if we have setup any hubs
-    sqlQuery = "SELECT * FROM variables WHERE name='numOfSetupHubs'";
-    if(mysql_query(sqlConn, sqlQuery.c_str()) 
-            && QUERY_ERROR_CHECK)
+    //and get the addresses if we have them
+    if(!getNumOfSetupHubs(sqlConn, &numOfSetupHubs))
     {
-        std::cout << "\nERROR: sql query failed to get 'numOfSetupHubs'!" 
-            << std::endl;
-        mysql_close(sqlConn);
         return 1;
     }
-    sqlResult = mysql_store_result(sqlConn);
-    sqlRow = mysql_fetch_row(sqlResult);
-    
-    //Get the addresses if we have them
-    if(std::stoi(sqlRow[1]) > 0)
+
+    if(numOfSetupHubs > 0)
     {
         haveAddrs = true;
-        mysql_free_result(sqlResult);
         
-        retrieveAddrs(sqlConn, hasHubs);
+        if(!retrieveAddrs(sqlConn, hasHubs))
+        {
+            return 1;
+        }
         
         myAddress = hasHubs[0].address;
     }
     else
     {
         haveAddrs = false;
-        mysql_free_result(sqlResult);
         
         //TODO: Generate random number using library for server address
+
+        myAddress = (uint8_t)(rand() % 255 + 2);
         
-        myAddress = 42; //Place holder value
+        //Add the server address to the database
         sqlQuery = "INSERT INTO hubs VALUES('" + std::to_string(myAddress) +
             "','server')";
-
         if(mysql_query(sqlConn, sqlQuery.c_str()) && QUERY_ERROR_CHECK)
         {
             std::cout << "\nERROR: sql query failed to update hub addresses!"
                 << std::endl;
-            std::cout << "DEBUG: Continuing anyway... Data may be missing" 
-                << endl;
+            std::cout << mysql_error(sqlConn) << endl;
             mysql_close(sqlConn);
             return 1;
         }
         
+        //Update the databases count of how many hubs have been setup
         sqlQuery = "UPDATE variables SET value='1' WHERE name='numOfSetupHubs'";
-        
         if(mysql_query(sqlConn, sqlQuery.c_str()) && QUERY_ERROR_CHECK)
         {
             std::cout << "\nERROR: sql query failed to update variable!"
                 << std::endl;
-            std::cout << mysql_info(sqlConn) << std::endl;
-            std::cout << mysql_error(sqlConn) << std::endl;
-            std::cout << mysql_errno(sqlConn) << std::endl;
+            std::cout << mysql_error(sqlConn) << endl;
             mysql_close(sqlConn);
             return 1;
         }
@@ -167,9 +161,12 @@ int main()
 
         switch(menuItemNum)
         {
+            //TODO: Add a fuction to rename a hub
             case 1:
-                //TODO: Run hub setup function
-                system("clear");
+                if(fullHubSetup(&radio, hasHubs, sqlConn) == 1)
+                {
+                    return 1;
+                }
                 break;
             case 2:
                 exitFlag = true;
