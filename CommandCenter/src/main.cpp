@@ -43,7 +43,8 @@ int main()
     wiringPiSetup();
 
     AES256 test;
-    RF24 radio(3, 7);
+    //Pin setup: http://tmrh20.github.io/RF24/index.html
+    RF24 radio(22, 0);
     radio.begin();
    
     pinMode(STATUS_LED, OUTPUT);

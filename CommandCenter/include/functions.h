@@ -6,6 +6,7 @@ struct hub
 
 bool isNumber(string inputStr);
 int fullHubSetup(RF24 *radioP, hub *hasHubsP, MYSQL *sqlConnP);
+bool placementMode(uint8_t myAddress, RF24 *radioP, uint8_t hubAddr);
 bool retrieveAddrs(MYSQL *sqlConnP, hub *hasHubsP);
 bool getNumOfSetupHubs(MYSQL *sqlConnP, int *numOfSetupHubsP);
 bool updateSetupCount(MYSQL *sqlConnP, int *numOfSetupHubsP);
@@ -54,6 +55,8 @@ bool isNumber(string inputStr)
 //=======================================================================
 int fullHubSetup(RF24 *radioP, hub *hasHubsP, MYSQL *sqlConnP)
 {
+    const uint8_t DEFAULT_HUB_ADDR = 2;
+
     MYSQL_RES *sqlResult;
     MYSQL_ROW sqlRow;
     int  numOfSetupHubs;
@@ -216,17 +219,142 @@ int fullHubSetup(RF24 *radioP, hub *hasHubsP, MYSQL *sqlConnP)
 
         system("clear");
         std::cout << "\nPlease hold the button on your hub until the"
-            " status and error LEDs start to blink." 
+            " status LED turns solid." 
             "\n\nPress [ENTER] once complete." << std::endl;
         std::cin.ignore();
         std::cin.get();
 
         //TODO: Send new address to hub as well as the rest of the addresses
-        
-        //TODO: Start placment mode (use a function)
-    }
+        std::this_thread::sleep_for(std::chrono::milliseconds(300));
+        std::cout << "\n\nPreparing to send addresses to " 
+            << newHubName << " hub..." << std::endl; 
 
+        radioP->openWritingPipe(DEFAULT_HUB_ADDR);
+        radioP->stopListening();
+
+        std::cout << "Sending..." << std::endl;
+
+        if(!radioP->write(&addresses2Send,32,0))
+        {
+            std::cout << "ERROR: Cant send addresses to " << newHubName
+                << " hub!" << std::endl;
+            return 1;
+        }
+        
+        std::cout << "\nSent!" << std::endl;
+
+        if(!placementMode(hasHubsP[0].address, radioP, newHubAddr))
+        {
+            return 1;
+        }
+    }
+    system("clear");
     return 0;
+}
+
+
+//=====================================================================
+//Description: Begins placement mode. Server will continuously ping hub
+//  and report whether the hub is in range or not.
+//
+//Arguments:
+//  (IN) sqlConnP -- pointer to sql connection
+//  (IN) radioP -- pointer to radio 
+//
+//Return:
+//  true -- placment succeeded
+//  false -- placement failed
+//=====================================================================
+bool placementMode(uint8_t myAddress, RF24 *radioP, uint8_t hubAddr)
+{
+    uint8_t indx = 0;
+    uint8_t spacerCnt = 0;
+    uint8_t startIndx = 0;
+    string command = "";
+    char packedReply[32] = {};
+    char testing[32] = {"2-PR-55.3-2333-254&000000000000"};
+
+    for(uint8_t indx = 0; indx < 32; indx++)
+    {
+        packedReply[indx] = '*';
+    }
+    
+    radioP->openWritingPipe(hubAddr);
+    radioP->openReadingPipe(1, myAddress);
+
+    system("clear");
+    std::cout << "\nEntered placement mode." << std::endl;
+    std::cout << "\nOnce the process begins, place the hub where you "
+        "want it. Note the red and blue LEDs."
+        "\nRED = Can NOT reach server, place elsewhere"
+        "\nBLUE = Ok to place"
+        "\n\n Once you have found a place, and the LED is blue,"
+        "Press and hold the button until the blue LED starts to flash."
+        << std::endl;
+    std::cout << "\n\nStarting...";
+
+    while(command != "PD")
+    {
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
+        spacerCnt =0;
+        indx = 0;
+        command = "";
+        
+        radioP->startListening();
+
+        if(radioP->available())
+        {
+            radioP->read(&packedReply,32);
+
+            std::cout << "Recieved message:" << std::endl;
+            for(int i =0; i < 32; i++)
+            {
+                std::cout << packedReply[i];
+            }
+
+            //Get the index of the spacer before the command
+            while(spacerCnt != 1 && indx < 31)
+            {
+                if(packedReply[indx] == '-')
+                {
+                    spacerCnt++;
+                }
+                else
+                {
+                    indx++;
+                }
+            }
+
+            indx++;
+
+            //Store the command
+            startIndx = indx;
+            for(uint8_t indx2 = startIndx; packedReply[indx2] != '-'; indx2++)
+            {
+                command += packedReply[indx2];
+            }
+
+            std::cout << "Command: " << command << std::endl;
+
+            //Verify the command
+            if(command == "P")
+            {
+                std::cout << "Sending back.." << std::endl;
+                radioP->stopListening();
+                radioP->flush_tx();
+
+                if(!radioP->write(&testing,32))
+                {
+                    std::cout << "Sending Failed!" << std::endl;
+                }
+                radioP->txStandBy();
+            }
+        }
+    }
+    system("clear");
+    std::cout << "\nPlacement done!" << std::endl;
+    std::this_thread::sleep_for(std::chrono::milliseconds(5000));
+    return true;
 }
 
 
