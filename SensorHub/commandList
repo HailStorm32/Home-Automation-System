@@ -1,0 +1,9 @@
+##Command definitions##
+
+P -- Ping (Defines message as a ping)
+PR -- Ping Recive (Message stating a ping was recived)
+PD -- Plament mode Done 
+AUB -- Address Update Begin (States that the server will be sending an updated list 
+    of addresses
+AU -- Address Update (States the following message contains an update of addresses
+RDY -- Ready (tells receiver of message that sender is ready)

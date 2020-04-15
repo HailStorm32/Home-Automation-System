@@ -1,10 +1,28 @@
 #include <Wire.h>
 
+struct pathData
+{
+    byte pathCnt;
+    byte shortestPathNode;
+    bool exitFlag;
+};
+
 String packMessage(String command, byte targetAddr, byte senderAddr,
         float tempData, int motionData);
+bool unpackMessage(char *packedMessage, byte *fromAddress, byte *toAddress, 
+        float *temperature, int *motionCount, String *command);
 void placementMode(byte *addresses, RF24 *radioP);
 void eepromWriteSingle(byte data, int memAddr);
 byte eepromReadSingle(int memAddr);
+bool sendMessage(RF24 *radioP, byte receivingAddr, int motionCnt, 
+        float temperature, String command);
+byte getAddrIndx(byte address);
+pathData findShortestPath(byte *visitedNodes, byte visitedNodeCnt, byte *targetNode,
+        byte currentNode);
+byte pathFind(byte *targetNode);
+byte numberOfValidEdges(byte nodeIndx);
+
+
 
 
 //=======================================================================
@@ -22,7 +40,7 @@ byte eepromReadSingle(int memAddr);
 void placementMode(byte *addresses, RF24 *radioP)
 {
     byte myAddress = addresses[0];
-    byte serverAddr = addresses[31];
+    byte serverAddr = addresses[MAX_NUM_OF_ADDRESSES-1];
     byte indx = 0;
     byte startIndx;
     byte numOfSpacers = 0;
@@ -193,7 +211,7 @@ void placementMode(byte *addresses, RF24 *radioP)
 //  (IN) command -- 1-3 char command
 //
 //Return:
-//  Void
+//  packedMessage -- string containing the packed message
 //==========================================================================
 String packMessage(String command, byte targetAddr, byte senderAddr,
         float tempData = 0, int motionData = 0)
@@ -327,6 +345,97 @@ String packMessage(String command, byte targetAddr, byte senderAddr,
 
 
 //=====================================================================
+//Description: unpacks the command, sender address and reciver address
+//  from the given packed message
+//
+//Arguments:
+//  (IN) packedMessage -- the packed message
+//  (OUT) fromAddress -- returns the senders address
+//  (OUT) toAddress -- returns the address that the message was addressed to
+//  (OUT) command -- returns the command that was in the message
+//
+//Return:
+//  true -- was able to unpack the command
+//  false -- unpacking failed
+
+bool unpackMessage(char *packedMessage, byte *fromAddress, byte *toAddress, 
+        float *temperature, int *motionCount, String *command)
+{
+    /*
+	Follows the following format:
+	
+    targetAddr -> spacer -> command -> tempData -> motionData ->
+        senderAddr -> end char
+	
+    Array index#-------> 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 
+    Array index slot -->[2,5,5,-,S,-,7,0,.,3,- , 1, 2, -, 2, 4, 5, &]
+	
+    255-S-70.3-12-245&
+    */
+
+    byte indx = 0;
+    String stringHolder;
+    
+    //TODO: Add a check to make sure the message was formated right
+
+    //Get the toAddress
+    while(packedMessage[indx] != '-')
+    {
+        stringHolder += packedMessage[indx];
+        indx++;
+    }
+
+    *toAddress = atoi(stringHolder.c_str());
+
+    indx++;
+    stringHolder = "";
+
+    //Get the command
+    while(packedMessage[indx] != '-')
+    {
+        stringHolder += packedMessage[indx];
+        indx++;
+    }
+
+    *command = stringHolder;
+    indx++;
+    stringHolder = "";
+
+    //Get temperature data
+    while(packedMessage[indx] != '-')
+    {
+        stringHolder += packedMessage[indx];
+        indx++;
+    }
+    *temperature = atof(stringHolder.c_str());
+
+    indx++;
+    stringHolder = "";
+
+    //Get motion count data
+    while(packedMessage[indx] != '-')
+    {
+        stringHolder += packedMessage[indx];
+        indx++;
+    }
+    *motionCount = atoi(stringHolder.c_str());
+
+    indx++;
+    stringHolder = "";
+
+    //Get the fromAddress
+    while(packedMessage[indx] != '&')
+    {
+        stringHolder += packedMessage[indx];
+        indx++;
+    }
+
+    *fromAddress = atoi(stringHolder.c_str());
+
+    return true;
+}
+
+//=====================================================================
 //Description: writes a byte of data to the given address of the 
 //  external eeprom
 //
@@ -370,4 +479,241 @@ byte eepromReadSingle(int memAddr)
     Wire.requestFrom(EEPROM_ADDR,(byte)1);
     
     return Wire.read();
+}
+
+
+//========================================================================
+//Description: sends a message to the given address using the address
+//  graph (if it has been set up) to send out messages
+//
+//Arguments:
+//  (IN) receivingAddr -- address to send message to
+//  (IN) motionCnt -- number of motion triggers
+//  (IN) temperature -- room temperature
+//  (IN) command -- command
+//
+//Return:
+//  true -- was able to send to a hub
+//  false -- wasnt able to send to any hub
+//=========================================================================
+bool sendMessage(RF24 *radioP, byte receivingAddr, int motionCnt, 
+        float temperature, String command)
+{
+    String packedMessage;
+    byte addrIndx = 1;
+    bool messageSent = false;
+    //byte hubsInRange
+
+    radioP->stopListening();
+    radioP->openWritingPipe(receivingAddr);
+
+    packedMessage = packMessage(command, receivingAddr, myAddress, temperature,
+            motionCnt);
+
+    if(radioP->write(packedMessage.c_str(), 32))
+    {
+        messageSent = true;
+    }
+    else
+    {
+        if(hasGraph == true)
+        {
+            //TODO: Send message using graph
+            
+            //See if one of our in range hubs can reach the address
+        }
+        else
+        {
+            while(addresses[addrIndx] != 0 || addrIndx != 
+                    MAX_NUM_OF_ADDRESSES-1)
+            {
+                radioP->openWritingPipe(addresses[addrIndx]);
+                if(radioP->write(packedMessage.c_str(), 32))
+                {
+                    messageSent = true;
+                    break;
+                }
+                addrIndx++;
+            }
+        }
+    }
+    
+    if(messageSent == true)
+    {
+        radioP->openWritingPipe(serverAddr);
+        radioP->startListening();
+        return true;
+    }
+    else
+    {
+        radioP->openWritingPipe(serverAddr);
+        radioP->startListening();
+        return false;
+    }
+}
+
+
+//=========================================================================
+//Description: returns what index the given address is stored in the
+//  address array
+//
+//Arguments:
+//  (IN) address -- address to get the index for
+//
+//Returns:
+//  byte -- the index for the given address
+//=========================================================================
+byte getAddrIndx(byte address)
+{
+    byte indx = 0;
+
+    while(indx != MAX_NUM_OF_ADDRESSES && addresses[indx] != address)
+    {
+        indx++;
+    }
+
+    if(indx >= MAX_NUM_OF_ADDRESSES)
+    {
+        indx = 255;
+        Serial.print("###");
+        while(true){}
+        return indx;
+    }
+
+    /*Serial.print("I:");
+    Serial.println(indx);*/
+   
+    return indx;
+}
+
+
+//=========================================================================
+//
+//=========================================================================
+byte numberOfValidEdges(byte nodeIndx)
+{
+    byte numOfValidEdges = 0;
+
+    for(byte edgeIndx = 0; edgeIndx < MAX_NUM_OF_ADDRESSES; edgeIndx++)
+    {
+        if(addrGraph[nodeIndx][edgeIndx] != 0)
+        {
+            numOfValidEdges++;
+        }
+    }
+    
+
+    /*while(addrGraph[nodeIndx][edgeIndx] != 0 && 
+            addrGraph[nodeIndx][edgeIndx] != 30)
+    {
+        edgeIndx++;
+    }
+    
+    edgeIndx--;*/
+
+    return numOfValidEdges;
+}
+
+
+//=========================================================================
+//
+//=========================================================================
+pathData findShortestPath(byte *visitedNodes, byte visitedNodeCnt, byte *targetNode,
+        byte currentNode)
+{
+    byte numOfValidEdges = numberOfValidEdges(getAddrIndx(currentNode));
+    byte nextNode; 
+    byte shortestPathCnt = 255;
+    byte shortestPathNode = 0;
+    pathData returnData;
+
+    for(byte indx = 0; indx < 7; indx++)
+    {
+        Serial.print(" ");
+        Serial.print(visitedNodes[indx]);
+    }
+    Serial.println(" --");
+    Serial.println(currentNode);
+
+    //Return if we already visited this node
+    for(byte indx = 0; indx < MAX_NUM_OF_ADDRESSES; indx++)
+    {
+        if(visitedNodes[indx] == currentNode)
+        {
+            Serial.println("AV");
+            returnData.shortestPathNode = 0;
+            returnData.pathCnt = 0;
+    //        returnData.hitTarget = false;
+            return returnData;
+        }
+    }
+
+    //Return if we landed on the target
+    if(currentNode == *targetNode)
+    {
+        Serial.println("HT");
+        returnData.shortestPathNode = visitedNodes[1];
+        returnData.pathCnt = visitedNodeCnt;
+  //      returnData.hitTarget = true;
+        return returnData;
+    }
+
+    if(numOfValidEdges <= 1)
+    {
+        Serial.println("DE");
+        returnData.shortestPathNode = 0;
+        returnData.pathCnt = 0;
+//        returnData.hitTarget = false;
+        return returnData;
+    }
+
+    
+    if(returnData.exitFlag == true)
+    {
+        visitedNodeCnt = 1;
+    }
+
+    for(byte edgeIndx = 0; edgeIndx < numOfValidEdges; edgeIndx++)
+    {
+        nextNode = addrGraph[getAddrIndx(currentNode)][edgeIndx];
+        visitedNodes[visitedNodeCnt] = currentNode;
+
+        returnData = 
+            findShortestPath(visitedNodes, ++visitedNodeCnt, targetNode, 
+                    nextNode);
+        
+        --visitedNodeCnt;
+
+    }
+
+    Serial.println("Exiting");
+    for(byte indx = 1; indx < MAX_NUM_OF_ADDRESSES; indx++)
+    {
+        visitedNodes[indx] = 0;
+    }
+    //visitedNodeCnt = 1;
+    returnData.shortestPathNode = shortestPathNode;
+    returnData.pathCnt = shortestPathCnt;
+    returnData.exitFlag = true;
+    return returnData;
+}
+
+
+//=========================================================================
+//
+//=========================================================================
+byte pathFind(byte *targetNode)
+{
+    byte visitedNodes[MAX_NUM_OF_ADDRESSES];
+    const byte visitedNodeCnt = 0;
+    pathData returnData;
+
+    for(byte indx = 0; indx < MAX_NUM_OF_ADDRESSES; indx++)
+    {
+        visitedNodes[indx] = 0;
+    }
+    
+    returnData = 
+        findShortestPath(visitedNodes, visitedNodeCnt, targetNode, myAddress);
+    return returnData.shortestPathNode;
 }

@@ -97,7 +97,7 @@ ARCH ?= avr
 # USBASP: e.g. /dev/ttyS0
 # It is a good idea to use udev rules to create a device name that is constant,
 # based on the serial number etc. of the USB device.
-PORT ?=		/dev/ttyUSB1
+PORT ?=		/dev/ttyUSB0
 
 # Arduino version (e.g. 23 for 0023, or 105 for 1.0.5).
 # Make sure this matches ARDUINO_DIR below!
