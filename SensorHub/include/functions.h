@@ -1,11 +1,5 @@
 #include <Wire.h>
-
-struct pathData
-{
-    byte pathCnt;
-    byte shortestPathNode;
-    bool exitFlag;
-};
+//#include <queue.h>
 
 String packMessage(String command, byte targetAddr, byte senderAddr,
         float tempData, int motionData);
@@ -16,11 +10,9 @@ void eepromWriteSingle(byte data, int memAddr);
 byte eepromReadSingle(int memAddr);
 bool sendMessage(RF24 *radioP, byte receivingAddr, int motionCnt, 
         float temperature, String command);
-byte getAddrIndx(byte address);
-pathData findShortestPath(byte *visitedNodes, byte visitedNodeCnt, byte *targetNode,
-        byte currentNode);
-byte pathFind(byte *targetNode);
-byte numberOfValidEdges(byte nodeIndx);
+byte getAddrIndx(byte *address);
+byte findNodeWithShortestPath(byte *targetNode);
+//byte numberOfValidEdges(byte nodeIndx);
 
 
 
@@ -563,11 +555,11 @@ bool sendMessage(RF24 *radioP, byte receivingAddr, int motionCnt,
 //Returns:
 //  byte -- the index for the given address
 //=========================================================================
-byte getAddrIndx(byte address)
+byte getAddrIndx(byte *address)
 {
     byte indx = 0;
 
-    while(indx != MAX_NUM_OF_ADDRESSES && addresses[indx] != address)
+    while(indx != MAX_NUM_OF_ADDRESSES && addresses[indx] != *address)
     {
         indx++;
     }
@@ -590,7 +582,7 @@ byte getAddrIndx(byte address)
 //=========================================================================
 //
 //=========================================================================
-byte numberOfValidEdges(byte nodeIndx)
+/*byte numberOfValidEdges(byte nodeIndx)
 {
     byte numOfValidEdges = 0;
 
@@ -602,118 +594,70 @@ byte numberOfValidEdges(byte nodeIndx)
         }
     }
     
-
-    /*while(addrGraph[nodeIndx][edgeIndx] != 0 && 
-            addrGraph[nodeIndx][edgeIndx] != 30)
-    {
-        edgeIndx++;
-    }
-    
-    edgeIndx--;*/
-
     return numOfValidEdges;
-}
+}*/
 
 
 //=========================================================================
 //
 //=========================================================================
-pathData findShortestPath(byte *visitedNodes, byte visitedNodeCnt, byte *targetNode,
-        byte currentNode)
+byte findNodeWithShortestPath(byte *targetNode)
 {
-    byte numOfValidEdges = numberOfValidEdges(getAddrIndx(currentNode));
-    byte nextNode; 
-    byte shortestPathCnt = 255;
-    byte shortestPathNode = 0;
-    pathData returnData;
+    bool haveVisited[MAX_NUM_OF_ADDRESSES];
+    //byte previusNode = 0;
+    byte currentNode = 0;
+    byte indx;
+    byte adjNode;
+    Queue graphQueue;
 
-    for(byte indx = 0; indx < 7; indx++)
-    {
-        Serial.print(" ");
-        Serial.print(visitedNodes[indx]);
-    }
-    Serial.println(" --");
-    Serial.println(currentNode);
-
-    //Return if we already visited this node
     for(byte indx = 0; indx < MAX_NUM_OF_ADDRESSES; indx++)
     {
-        if(visitedNodes[indx] == currentNode)
+        haveVisited[indx] = false;
+    }
+
+    currentNode = myAddress; 
+    graphQueue.push(currentNode);
+    haveVisited[getAddrIndx(&currentNode)] = true;
+
+    while(!graphQueue.isEmpty())
+    {
+        graphQueue.pop();
+
+        //Queue all adjacent nodes
+        while(addrGraph[getAddrIndx(&currentNode)].adjNodes[indx] != 0)
         {
-            Serial.println("AV");
-            returnData.shortestPathNode = 0;
-            returnData.pathCnt = 0;
-    //        returnData.hitTarget = false;
-            return returnData;
+            adjNode = addrGraph[getAddrIndx(&currentNode)].adjNodes[indx];
+
+            if(haveVisited[getAddrIndx(&adjNode)] == false)
+            {
+                //Add to queue
+                graphQueue.push(adjNode);
+
+                //Mark as visited
+                haveVisited[getAddrIndx(&adjNode)] = true;
+
+                //Add its parent node
+                addrGraph[getAddrIndx(&adjNode)].parentNode = currentNode;
+
+                //Get its distance to the starting node
+                addrGraph[getAddrIndx(&adjNode)].distanceFromStart = 
+                    addrGraph[getAddrIndx(&currentNode)].distanceFromStart + 1;
+            }
+            indx++;
         }
-    }
 
-    //Return if we landed on the target
-    if(currentNode == *targetNode)
-    {
-        Serial.println("HT");
-        returnData.shortestPathNode = visitedNodes[1];
-        returnData.pathCnt = visitedNodeCnt;
-  //      returnData.hitTarget = true;
-        return returnData;
-    }
-
-    if(numOfValidEdges <= 1)
-    {
-        Serial.println("DE");
-        returnData.shortestPathNode = 0;
-        returnData.pathCnt = 0;
-//        returnData.hitTarget = false;
-        return returnData;
-    }
-
-    
-    if(returnData.exitFlag == true)
-    {
-        visitedNodeCnt = 1;
-    }
-
-    for(byte edgeIndx = 0; edgeIndx < numOfValidEdges; edgeIndx++)
-    {
-        nextNode = addrGraph[getAddrIndx(currentNode)][edgeIndx];
-        visitedNodes[visitedNodeCnt] = currentNode;
-
-        returnData = 
-            findShortestPath(visitedNodes, ++visitedNodeCnt, targetNode, 
-                    nextNode);
-        
-        --visitedNodeCnt;
-
-    }
-
-    Serial.println("Exiting");
-    for(byte indx = 1; indx < MAX_NUM_OF_ADDRESSES; indx++)
-    {
-        visitedNodes[indx] = 0;
-    }
-    //visitedNodeCnt = 1;
-    returnData.shortestPathNode = shortestPathNode;
-    returnData.pathCnt = shortestPathCnt;
-    returnData.exitFlag = true;
-    return returnData;
-}
-
-
-//=========================================================================
-//
-//=========================================================================
-byte pathFind(byte *targetNode)
-{
-    byte visitedNodes[MAX_NUM_OF_ADDRESSES];
-    const byte visitedNodeCnt = 0;
-    pathData returnData;
-
-    for(byte indx = 0; indx < MAX_NUM_OF_ADDRESSES; indx++)
-    {
-        visitedNodes[indx] = 0;
+        currentNode = graphQueue.front();
+        indx = 0;
     }
     
-    returnData = 
-        findShortestPath(visitedNodes, visitedNodeCnt, targetNode, myAddress);
-    return returnData.shortestPathNode;
+    //Work backward from the target node and piece together parent nodes
+    indx = 0;
+
+    currentNode = *targetNode;
+
+    while(addrGraph[getAddrIndx(&currentNode)].parentNode != myAddress)
+    {
+        currentNode = addrGraph[getAddrIndx(&currentNode)].parentNode;
+    }
+    return currentNode;
 }

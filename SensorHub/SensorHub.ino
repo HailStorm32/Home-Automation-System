@@ -11,6 +11,7 @@
 #include "SPI.h"
 #include <RF24.h>
 #include <DHT.h>
+#include <queue.h>
 
 #define DHTPIN 3     // Define what digital pin the temp sensor is connected to
 #define DHTTYPE DHT11  //Define the type of temp sensor we are useing
@@ -19,17 +20,27 @@ RF24 radio(9, 10); //Set what pins the radio are in
 DHT dht(DHTPIN, DHTTYPE); // Initialize temp sensor
 
 const byte DEFAULT_ADDR = 2;//Address Min:2 Max:255
-const byte MAX_NUM_OF_ADDRESSES = 10;
+const byte MAX_NUM_OF_ADDRESSES = 32;
 const byte STATUS_LED = A2;
 const byte ERROR_LED = A3;
 const byte SET_BTN = 2;
 const byte EEPROM_ADDR = 0x50; //1010000
 const byte MAX_ADDR_SENDING_CAP = 8;
 
+struct node
+{
+    byte adjNodes[MAX_NUM_OF_ADDRESSES];
+    byte parentNode;
+    byte distanceFromStart;
+};
+
 byte addresses[MAX_NUM_OF_ADDRESSES] = {};//hub's address allways at [0] and server's at [31]
 byte myAddress = 0;
 byte serverAddr = 0;
-byte addrGraph[MAX_NUM_OF_ADDRESSES][MAX_NUM_OF_ADDRESSES];//32x31
+node addrGraph[MAX_NUM_OF_ADDRESSES];
+//byte addrGraph[MAX_NUM_OF_ADDRESSES][MAX_NUM_OF_ADDRESSES];//32x31
+//byte nodeParents[MAX_NUM_OF_ADDRESSES];
+
 bool hasGraph = false;
 
 #include "include/functions.h"
@@ -72,9 +83,12 @@ void setup()
     {
         for(byte indx2 = 0; indx2 < MAX_NUM_OF_ADDRESSES; indx2++) //31
         {
-            addrGraph[indx][indx2] = 0;
+            addrGraph[indx].adjNodes[indx2] = 0;
         }
+        addrGraph[indx].parentNode = 0;
+        addrGraph[indx].distanceFromStart = 255;
     }
+
 
     myAddress = DEFAULT_ADDR;
 
@@ -210,32 +224,32 @@ void loop()
 
 
 /////////////----A----//////////////
-    addrGraph[0][0] = 23;//D
-    addrGraph[0][1] = 22;//C
-    addrGraph[0][2] = 21;//B
+    addrGraph[0].adjNodes[0] = 23;//D
+    addrGraph[0].adjNodes[1] = 22;//C
+    addrGraph[0].adjNodes[2] = 21;//B
 
 /////////////----B----//////////////
-    addrGraph[1][0] = 22;//C
-    addrGraph[1][1] = 24;//E
-    addrGraph[1][2] = 25;//F
-    addrGraph[1][3] = 20;//A
+    addrGraph[1].adjNodes[0] = 22;//C
+    addrGraph[1].adjNodes[1] = 24;//E
+    addrGraph[1].adjNodes[2] = 25;//F
+    addrGraph[1].adjNodes[3] = 20;//A
 
 /////////////----C----//////////////
-    addrGraph[2][0] = 20;//A
-    addrGraph[2][1] = 21;//B
-    addrGraph[2][2] = 24;//E
+    addrGraph[2].adjNodes[0] = 20;//A
+    addrGraph[2].adjNodes[1] = 21;//B
+    addrGraph[2].adjNodes[2] = 24;//E
 
 /////////////----D----//////////////
-    addrGraph[3][0] = 20;//A
-    addrGraph[3][1] = 24;//E
+    addrGraph[3].adjNodes[0] = 20;//A
+    addrGraph[3].adjNodes[1] = 24;//E
 
 /////////////----E----//////////////
-    addrGraph[4][0] = 23;//D
-    addrGraph[4][1] = 21;//B
-    addrGraph[4][2] = 22;//C
+    addrGraph[4].adjNodes[0] = 23;//D
+    addrGraph[4].adjNodes[1] = 21;//B
+    addrGraph[4].adjNodes[2] = 22;//C
 
 /////////////----F----//////////////
-    addrGraph[9][0] = 21;//B
+    addrGraph[9].adjNodes[0] = 21;//B
 
     /*Serial.println(numberOfValidEdges(getAddrIndx(20)));
     Serial.println(numberOfValidEdges(getAddrIndx(21)));
@@ -248,19 +262,20 @@ void loop()
 
     myAddress = 20;
     serverAddr = 25;
-    byte target = 25;
+    byte target = 24;
 
     hasGraph = true;
 
-    ////////////////DEBUG///////////////////////
 
     Serial.println("Begining Test:");
 
     Serial.print("Node with shortest path is: ");
 
-    Serial.println(pathFind(&target));
+    Serial.println(findNodeWithShortestPath(&target));
 
     Serial.println("Done!");
+
+    ////////////////DEBUG///////////////////////
 
     while(!radio.available()) {}
 

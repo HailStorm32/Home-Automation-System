@@ -135,7 +135,7 @@ endif
 # User libraries (in ~/sketchbook/libraries/).
 # Give the name of the directory containing the library source files.
 USER_LIBDIR ?=	./libraries
-USER_LIBS ?= DHT RF24 
+USER_LIBS ?= DHT RF24 QUEUE
 
 # Additional pre-compiled libraries to link with.
 # Always leave the math (m) library last!
