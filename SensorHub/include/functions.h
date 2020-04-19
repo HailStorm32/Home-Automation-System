@@ -11,8 +11,7 @@ byte eepromReadSingle(int memAddr);
 bool sendMessage(RF24 *radioP, byte receivingAddr, int motionCnt, 
         float temperature, String command);
 byte getAddrIndx(byte *address);
-byte findNodeWithShortestPath(byte *targetNode);
-//byte numberOfValidEdges(byte nodeIndx);
+byte findNodeWithShortestPath(byte *targetNode, byte startingNode = 0);
 
 
 
@@ -494,7 +493,7 @@ bool sendMessage(RF24 *radioP, byte receivingAddr, int motionCnt,
     String packedMessage;
     byte addrIndx = 1;
     bool messageSent = false;
-    //byte hubsInRange
+    byte hub2SendTo;
 
     radioP->stopListening();
     radioP->openWritingPipe(receivingAddr);
@@ -510,9 +509,30 @@ bool sendMessage(RF24 *radioP, byte receivingAddr, int motionCnt,
     {
         if(hasGraph == true)
         {
-            //TODO: Send message using graph
+            byte indx = 0;
             
-            //See if one of our in range hubs can reach the address
+            hub2SendTo = findNodeWithShortestPath(&receivingAddr);
+            
+            if(!radioP->write(&packedMessage, 32))
+            {
+                //try and see if there is a path from another adjacent hub
+                while(indx < MAX_NUM_OF_ADDRESSES && 
+                        addrGraph[getAddrIndx(&myAddress)].adjNodes[indx] != 0)
+                {
+                    hub2SendTo = findNodeWithShortestPath(
+                            &addrGraph[getAddrIndx(&myAddress)].adjNodes[indx]);
+
+                    if(hub2SendTo != 0 && radioP->write(&packedMessage, 32))
+                    {
+                        messageSent = true;
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                messageSent = true;
+            }
         }
         else
         {
@@ -529,17 +549,15 @@ bool sendMessage(RF24 *radioP, byte receivingAddr, int motionCnt,
             }
         }
     }
+    radioP->openWritingPipe(serverAddr);
+    radioP->startListening();
     
     if(messageSent == true)
     {
-        radioP->openWritingPipe(serverAddr);
-        radioP->startListening();
         return true;
     }
     else
     {
-        radioP->openWritingPipe(serverAddr);
-        radioP->startListening();
         return false;
     }
 }
@@ -580,28 +598,19 @@ byte getAddrIndx(byte *address)
 
 
 //=========================================================================
+//Description: Traverses address graph using BFS. Then using the list of
+//  parent nodes, goes backwards from the target node to find the node that
+//  starts the shortest path
 //
-//=========================================================================
-/*byte numberOfValidEdges(byte nodeIndx)
-{
-    byte numOfValidEdges = 0;
-
-    for(byte edgeIndx = 0; edgeIndx < MAX_NUM_OF_ADDRESSES; edgeIndx++)
-    {
-        if(addrGraph[nodeIndx][edgeIndx] != 0)
-        {
-            numOfValidEdges++;
-        }
-    }
-    
-    return numOfValidEdges;
-}*/
-
-
-//=========================================================================
+//Arguments:
+//  (IN) targetNode -- contains the address of the target node
+//  (IN) startingNode -- contains the address of the starting node
 //
+//Returns:
+//  0 -- if failed
+//  2-255 -- address of the node that starts the path
 //=========================================================================
-byte findNodeWithShortestPath(byte *targetNode)
+byte findNodeWithShortestPath(byte *targetNode, byte startingNode)
 {
     bool haveVisited[MAX_NUM_OF_ADDRESSES];
     //byte previusNode = 0;
@@ -615,7 +624,14 @@ byte findNodeWithShortestPath(byte *targetNode)
         haveVisited[indx] = false;
     }
 
-    currentNode = myAddress; 
+    if(startingNode == 0)
+    {
+        currentNode = myAddress;
+    }
+    else
+    {
+        currentNode = startingNode; 
+    }
     graphQueue.push(currentNode);
     haveVisited[getAddrIndx(&currentNode)] = true;
 
@@ -655,9 +671,18 @@ byte findNodeWithShortestPath(byte *targetNode)
 
     currentNode = *targetNode;
 
-    while(addrGraph[getAddrIndx(&currentNode)].parentNode != myAddress)
+    while(addrGraph[getAddrIndx(&currentNode)].parentNode != myAddress &&
+            indx < MAX_NUM_OF_ADDRESSES)
     {
         currentNode = addrGraph[getAddrIndx(&currentNode)].parentNode;
+        indx++;
     }
-    return currentNode;
+    if(indx >= MAX_NUM_OF_ADDRESSES)
+    {
+        return 0;
+    }
+    else
+    {
+        return currentNode;
+    }
 }

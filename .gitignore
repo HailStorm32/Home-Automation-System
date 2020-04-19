@@ -52,6 +52,8 @@ CommandCenter/.vs/*
 CommandCenter/CommandCenter/x64/*
 CommandCenter/CommandCenter/*.vcxproj*
 CommandCenter/x64/Debug/*
+SensorHub/bin/*
+TODO
 
 #bin files
 *.o

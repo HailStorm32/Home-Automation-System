@@ -38,8 +38,6 @@ byte addresses[MAX_NUM_OF_ADDRESSES] = {};//hub's address allways at [0] and ser
 byte myAddress = 0;
 byte serverAddr = 0;
 node addrGraph[MAX_NUM_OF_ADDRESSES];
-//byte addrGraph[MAX_NUM_OF_ADDRESSES][MAX_NUM_OF_ADDRESSES];//32x31
-//byte nodeParents[MAX_NUM_OF_ADDRESSES];
 
 bool hasGraph = false;
 
@@ -47,7 +45,6 @@ bool hasGraph = false;
 
 //LOCAL VARIABLS
 bool hasDoneSetup = false;
-//char testing[20] = {};
 char packedMessage[32];
 String command;
 byte fromAddress;
@@ -220,36 +217,62 @@ void loop()
     addresses[2] = 22;
     addresses[3] = 23;
     addresses[4] = 24;
-    addresses[9] = 25;
+    addresses[5] = 25;
+    addresses[6] = 26;
+    addresses[7] = 27;
+    addresses[8] = 28;
+    addresses[9] = 29;
+    addresses[31] = 30;
 
 
 /////////////----A----//////////////
-    addrGraph[0].adjNodes[0] = 23;//D
-    addrGraph[0].adjNodes[1] = 22;//C
-    addrGraph[0].adjNodes[2] = 21;//B
+    addrGraph[0].adjNodes[0] = 25;//F
+    addrGraph[0].adjNodes[1] = 30;//K
 
 /////////////----B----//////////////
-    addrGraph[1].adjNodes[0] = 22;//C
-    addrGraph[1].adjNodes[1] = 24;//E
-    addrGraph[1].adjNodes[2] = 25;//F
-    addrGraph[1].adjNodes[3] = 20;//A
+    addrGraph[1].adjNodes[0] = 25;//F
+    addrGraph[1].adjNodes[1] = 23;//D
+    addrGraph[1].adjNodes[2] = 24;//E
+    addrGraph[1].adjNodes[3] = 27;//H
+    addrGraph[1].adjNodes[4] = 26;//G
+    addrGraph[1].adjNodes[5] = 30;//K
 
 /////////////----C----//////////////
-    addrGraph[2].adjNodes[0] = 20;//A
-    addrGraph[2].adjNodes[1] = 21;//B
-    addrGraph[2].adjNodes[2] = 24;//E
+    addrGraph[2].adjNodes[0] = 24;//F
+    addrGraph[2].adjNodes[1] = 23;//D
 
 /////////////----D----//////////////
-    addrGraph[3].adjNodes[0] = 20;//A
-    addrGraph[3].adjNodes[1] = 24;//E
+    addrGraph[3].adjNodes[0] = 22;//C
+    addrGraph[3].adjNodes[1] = 21;//B
 
 /////////////----E----//////////////
-    addrGraph[4].adjNodes[0] = 23;//D
-    addrGraph[4].adjNodes[1] = 21;//B
-    addrGraph[4].adjNodes[2] = 22;//C
+    addrGraph[4].adjNodes[0] = 21;//B
+    addrGraph[4].adjNodes[1] = 27;//H
+    addrGraph[4].adjNodes[2] = 29;//J
 
 /////////////----F----//////////////
-    addrGraph[9].adjNodes[0] = 21;//B
+    addrGraph[5].adjNodes[0] = 20;//A
+    addrGraph[5].adjNodes[1] = 22;//C
+    addrGraph[5].adjNodes[2] = 21;//B
+
+/////////////----G----//////////////
+    addrGraph[6].adjNodes[0] = 21;//B
+
+/////////////----H----//////////////
+    addrGraph[7].adjNodes[0] = 21;//B
+    addrGraph[7].adjNodes[1] = 24;//E
+
+/////////////----I----//////////////
+    addrGraph[8].adjNodes[0] = 30;//K
+
+/////////////----J----//////////////
+    addrGraph[9].adjNodes[0] = 24;//E
+
+/////////////----K----//////////////
+    addrGraph[31].adjNodes[0] = 20;//A
+    addrGraph[31].adjNodes[1] = 21;//B
+    addrGraph[31].adjNodes[2] = 28;//I
+
 
     /*Serial.println(numberOfValidEdges(getAddrIndx(20)));
     Serial.println(numberOfValidEdges(getAddrIndx(21)));
@@ -260,14 +283,22 @@ void loop()
 
     while(true){}*/
 
-    myAddress = 20;
+    myAddress = 30;
     serverAddr = 25;
-    byte target = 24;
+    byte target = 29;
 
     hasGraph = true;
 
 
     Serial.println("Begining Test:");
+
+    Serial.print("From ");
+
+    Serial.print(myAddress);
+
+    Serial.print(" to ");
+
+    Serial.println(target);
 
     Serial.print("Node with shortest path is: ");
 
