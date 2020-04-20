@@ -1,0 +1,41 @@
+eemprom addresses 0-2000
+
+0: hasDoneSetup
+1: hasGraph
+2: [EMPTY]
+4: vv
+.
+.
+. addresses array
+.
+.
+.
+.
+36: ^^
+37: VV
+.
+.
+. addrGraph struct *see format
+.
+.
+.
+.
+.
+.
+1125: ^^
+1126 - 2000: [EMPTY]
+
+
+
+
+addrGraph storage format:
+1: VV
+.
+. adjNodes array
+.
+33: ^^
+34: parentNode
+35: distanceFromStart
+|
+|Repeat above structure
+

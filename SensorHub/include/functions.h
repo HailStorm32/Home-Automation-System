@@ -1,15 +1,15 @@
 #include <Wire.h>
 //#include <queue.h>
 
-String packMessage(String command, byte targetAddr, byte senderAddr,
+String packMessage(String command, byte *targetAddr, byte *senderAddr,
         float tempData, int motionData);
 bool unpackMessage(char *packedMessage, byte *fromAddress, byte *toAddress, 
         float *temperature, int *motionCount, String *command);
-void placementMode(byte *addresses, RF24 *radioP);
-void eepromWriteSingle(byte data, int memAddr);
+void placementMode(RF24 *radioP);
+void eepromWriteSingle(byte data, short memAddr);
 byte eepromReadSingle(int memAddr);
-bool sendMessage(RF24 *radioP, byte receivingAddr, int motionCnt, 
-        float temperature, String command);
+bool sendMessage(RF24 *radioP, byte *receivingAddr, short *motionCnt, 
+        float *temperature, String *command);
 byte getAddrIndx(byte *address);
 byte findNodeWithShortestPath(byte *targetNode, byte startingNode = 0);
 
@@ -28,10 +28,10 @@ byte findNodeWithShortestPath(byte *targetNode, byte startingNode = 0);
 //Return:
 //  void
 //=======================================================================
-void placementMode(byte *addresses, RF24 *radioP)
+void placementMode(RF24 *radioP)
 {
-    byte myAddress = addresses[0];
-    byte serverAddr = addresses[MAX_NUM_OF_ADDRESSES-1];
+    //byte myAddress = addresses[0];
+    //byte serverAddr = addresses[MAX_NUM_OF_ADDRESSES-1];
     byte indx = 0;
     byte startIndx;
     byte numOfSpacers = 0;
@@ -42,13 +42,14 @@ void placementMode(byte *addresses, RF24 *radioP)
     bool timeOut = false;
     bool receivedReply = false;
     
-
+    Serial.print("My: ");
+    Serial.println(myAddress);
     radioP->stopListening();
     radioP->flush_tx();
     radioP->openWritingPipe(serverAddr);
     radioP->openReadingPipe(1, myAddress);
 
-    message = packMessage("P", serverAddr, myAddress, 0, 0); 
+    message = packMessage("P", &serverAddr, &myAddress, 0, 0); 
    
     while(digitalRead(SET_BTN) == HIGH || receivedReply != true)
     {
@@ -166,7 +167,7 @@ void placementMode(byte *addresses, RF24 *radioP)
     radioP->stopListening();
     radioP->flush_tx();
 
-    message = packMessage("PD", serverAddr, myAddress, 0, 0); 
+    message = packMessage("PD", &serverAddr, &myAddress, 0, 0); 
 
     radioP->write(message.c_str(), 32);
     radioP->txStandBy();
@@ -204,7 +205,7 @@ void placementMode(byte *addresses, RF24 *radioP)
 //Return:
 //  packedMessage -- string containing the packed message
 //==========================================================================
-String packMessage(String command, byte targetAddr, byte senderAddr,
+String packMessage(String command, byte *targetAddr, byte *senderAddr,
         float tempData = 0, int motionData = 0)
 {
     /*
@@ -231,7 +232,7 @@ String packMessage(String command, byte targetAddr, byte senderAddr,
     }
 
     //Add targetAddr to message array
-    numberHolder = static_cast<String>(targetAddr);     
+    numberHolder = static_cast<String>(*targetAddr);     
     for(byte indx = 0; indx < numberHolder.length(); indx++)
     {
         packedMsg[indx] = numberHolder[indx];
@@ -319,7 +320,7 @@ String packMessage(String command, byte targetAddr, byte senderAddr,
     
     indxStart = indxCounter;
     //Add senderAddr to message array
-    numberHolder = static_cast<String>(senderAddr);     
+    numberHolder = static_cast<String>(*senderAddr);     
     for(byte indx = 0; indx < numberHolder.length(); indx++)
     {
         packedMsg[indx + indxStart] = numberHolder[indx];
@@ -437,7 +438,7 @@ bool unpackMessage(char *packedMessage, byte *fromAddress, byte *toAddress,
 //Return:
 //  void
 //======================================================================
-void eepromWriteSingle(byte data, int memAddr)
+void eepromWriteSingle(byte data, short memAddr)
 {
     Wire.begin();
    
@@ -487,8 +488,8 @@ byte eepromReadSingle(int memAddr)
 //  true -- was able to send to a hub
 //  false -- wasnt able to send to any hub
 //=========================================================================
-bool sendMessage(RF24 *radioP, byte receivingAddr, int motionCnt, 
-        float temperature, String command)
+bool sendMessage(RF24 *radioP, byte *receivingAddr, short *motionCnt, 
+        float *temperature, String command)
 {
     String packedMessage;
     byte addrIndx = 1;
@@ -496,10 +497,10 @@ bool sendMessage(RF24 *radioP, byte receivingAddr, int motionCnt,
     byte hub2SendTo;
 
     radioP->stopListening();
-    radioP->openWritingPipe(receivingAddr);
+    radioP->openWritingPipe(*receivingAddr);
 
-    packedMessage = packMessage(command, receivingAddr, myAddress, temperature,
-            motionCnt);
+    packedMessage = packMessage(command, receivingAddr, &myAddress, *temperature,
+            *motionCnt);
 
     if(radioP->write(packedMessage.c_str(), 32))
     {
@@ -510,8 +511,7 @@ bool sendMessage(RF24 *radioP, byte receivingAddr, int motionCnt,
         if(hasGraph == true)
         {
             byte indx = 0;
-            
-            hub2SendTo = findNodeWithShortestPath(&receivingAddr);
+            hub2SendTo = findNodeWithShortestPath(receivingAddr);
             
             if(!radioP->write(&packedMessage, 32))
             {
@@ -539,7 +539,7 @@ bool sendMessage(RF24 *radioP, byte receivingAddr, int motionCnt,
             while(addresses[addrIndx] != 0 || addrIndx != 
                     MAX_NUM_OF_ADDRESSES-1)
             {
-                radioP->openWritingPipe(addresses[addrIndx]);
+                radioP->openWritingPipe(&addresses[addrIndx]);
                 if(radioP->write(packedMessage.c_str(), 32))
                 {
                     messageSent = true;
@@ -549,7 +549,7 @@ bool sendMessage(RF24 *radioP, byte receivingAddr, int motionCnt,
             }
         }
     }
-    radioP->openWritingPipe(serverAddr);
+    radioP->openWritingPipe(&serverAddr);
     radioP->startListening();
     
     if(messageSent == true)

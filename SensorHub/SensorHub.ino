@@ -26,6 +26,10 @@ const byte ERROR_LED = A3;
 const byte SET_BTN = 2;
 const byte EEPROM_ADDR = 0x50; //1010000
 const byte MAX_ADDR_SENDING_CAP = 8;
+const short VARIABLE_MEM_START = 0;
+const short ADDR_ARRAY_MEM_START = VARIABLE_MEM_START + 4;
+const short GRAPH_ARRAY_MEM_START = 
+    ADDR_ARRAY_MEM_START + MAX_NUM_OF_ADDRESSES;
 
 struct node
 {
@@ -106,7 +110,7 @@ void setup()
 
     //check storage to see it we have already done setup
     Serial.println("checking..");
-    /*if(eepromReadSingle(0) == 1)
+    if(eepromReadSingle(0) == 1)
     {
         digitalWrite(STATUS_LED, HIGH);
         delay(300);
@@ -119,10 +123,11 @@ void setup()
         Serial.println("have been in setup");
         hasDoneSetup = true;
         
-        //get myAddress and other hub addresses from storage
-        for(byte indx = 0; indx < MAX_NUM_OF_ADDRESSES; indx++)
+        //Get myAddress addresses array from storage
+        for(byte indx = ADDR_ARRAY_MEM_START; indx < 
+                MAX_NUM_OF_ADDRESSES + ADDR_ARRAY_MEM_START; indx++)
         {
-            addresses[indx] = eepromReadSingle(indx+1);
+            addresses[indx - ADDR_ARRAY_MEM_START] = eepromReadSingle(indx+1);
         }
 
         myAddress = addresses[0];
@@ -140,6 +145,8 @@ void setup()
     }
     else
     {
+        Serial.println("havnt been in setup");
+        
         //wait for user confirmation
         while(digitalRead(SET_BTN) != LOW)
         {
@@ -156,7 +163,6 @@ void setup()
             digitalWrite(ERROR_LED, LOW);
         }
 
-        Serial.println("havnt been in setup");
         radio.openReadingPipe(1,myAddress);
         radio.startListening();
 
@@ -170,11 +176,12 @@ void setup()
 
         radio.read(&addresses, MAX_NUM_OF_ADDRESSES);
 
-        //store the array we received into storage
+        //Store the array we received into storage
         Serial.println("entering loop");
-        for(byte indx = 0; indx < MAX_NUM_OF_ADDRESSES; indx++)
+        for(byte indx = ADDR_ARRAY_MEM_START; indx < 
+                MAX_NUM_OF_ADDRESSES + ADDR_ARRAY_MEM_START; indx++)
         {
-            eepromWriteSingle(addresses[indx], indx+1);
+            eepromWriteSingle(addresses[indx - ADDR_ARRAY_MEM_START], indx+1);
         }
 
         myAddress = addresses[0];
@@ -189,13 +196,13 @@ void setup()
         }
         
         //Start placement mode
-        placementMode(addresses, &radio); 
+        placementMode(&radio); 
         Serial.println("Exit");     
 
         //store that we have finished setup in storage
         eepromWriteSingle(1, 0);
         hasDoneSetup = true;
-    }*/
+    }
 
     radio.startListening();
     radio.openReadingPipe(1, myAddress);
@@ -204,110 +211,6 @@ void setup()
 
 void loop()
 {
-    ////////////////DEBUG///////////////////////
-    
-    for(byte indx = 0; indx < MAX_NUM_OF_ADDRESSES; indx++)
-    {
-        addresses[indx] = 0;
-    }
-
-
-    addresses[0] = 20;
-    addresses[1] = 21;
-    addresses[2] = 22;
-    addresses[3] = 23;
-    addresses[4] = 24;
-    addresses[5] = 25;
-    addresses[6] = 26;
-    addresses[7] = 27;
-    addresses[8] = 28;
-    addresses[9] = 29;
-    addresses[31] = 30;
-
-
-/////////////----A----//////////////
-    addrGraph[0].adjNodes[0] = 25;//F
-    addrGraph[0].adjNodes[1] = 30;//K
-
-/////////////----B----//////////////
-    addrGraph[1].adjNodes[0] = 25;//F
-    addrGraph[1].adjNodes[1] = 23;//D
-    addrGraph[1].adjNodes[2] = 24;//E
-    addrGraph[1].adjNodes[3] = 27;//H
-    addrGraph[1].adjNodes[4] = 26;//G
-    addrGraph[1].adjNodes[5] = 30;//K
-
-/////////////----C----//////////////
-    addrGraph[2].adjNodes[0] = 24;//F
-    addrGraph[2].adjNodes[1] = 23;//D
-
-/////////////----D----//////////////
-    addrGraph[3].adjNodes[0] = 22;//C
-    addrGraph[3].adjNodes[1] = 21;//B
-
-/////////////----E----//////////////
-    addrGraph[4].adjNodes[0] = 21;//B
-    addrGraph[4].adjNodes[1] = 27;//H
-    addrGraph[4].adjNodes[2] = 29;//J
-
-/////////////----F----//////////////
-    addrGraph[5].adjNodes[0] = 20;//A
-    addrGraph[5].adjNodes[1] = 22;//C
-    addrGraph[5].adjNodes[2] = 21;//B
-
-/////////////----G----//////////////
-    addrGraph[6].adjNodes[0] = 21;//B
-
-/////////////----H----//////////////
-    addrGraph[7].adjNodes[0] = 21;//B
-    addrGraph[7].adjNodes[1] = 24;//E
-
-/////////////----I----//////////////
-    addrGraph[8].adjNodes[0] = 30;//K
-
-/////////////----J----//////////////
-    addrGraph[9].adjNodes[0] = 24;//E
-
-/////////////----K----//////////////
-    addrGraph[31].adjNodes[0] = 20;//A
-    addrGraph[31].adjNodes[1] = 21;//B
-    addrGraph[31].adjNodes[2] = 28;//I
-
-
-    /*Serial.println(numberOfValidEdges(getAddrIndx(20)));
-    Serial.println(numberOfValidEdges(getAddrIndx(21)));
-    Serial.println(numberOfValidEdges(getAddrIndx(22))); 
-    Serial.println(numberOfValidEdges(getAddrIndx(23)));
-    Serial.println(numberOfValidEdges(getAddrIndx(24)));
-    Serial.println(numberOfValidEdges(getAddrIndx(25)));
-
-    while(true){}*/
-
-    myAddress = 30;
-    serverAddr = 25;
-    byte target = 29;
-
-    hasGraph = true;
-
-
-    Serial.println("Begining Test:");
-
-    Serial.print("From ");
-
-    Serial.print(myAddress);
-
-    Serial.print(" to ");
-
-    Serial.println(target);
-
-    Serial.print("Node with shortest path is: ");
-
-    Serial.println(findNodeWithShortestPath(&target));
-
-    Serial.println("Done!");
-
-    ////////////////DEBUG///////////////////////
-
     while(!radio.available()) {}
 
     radio.read(&packedMessage, 32);
@@ -340,7 +243,7 @@ void loop()
                 radio.stopListening();
 
                 //TODO: Send message to server telling it we are ready
-                sendMessage(&radio, serverAddr, 0,0, "RDY");
+                sendMessage(&radio, &serverAddr, 0,0, "RDY");
 
                 //Wait for the dump of addresses
                 while(!radio.available()) {}
