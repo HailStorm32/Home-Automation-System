@@ -1,7 +1,7 @@
-#include <Wire.h>
+#include <i2c_t3.h>
 //#include <queue.h>
 
-String packMessage(String command, byte *targetAddr, byte *senderAddr,
+String packMessage(String command, byte targetAddr, byte senderAddr,
         float tempData, int motionData);
 bool unpackMessage(char *packedMessage, byte *fromAddress, byte *toAddress, 
         float *temperature, int *motionCount, String *command);
@@ -42,14 +42,14 @@ void placementMode(RF24 *radioP)
     bool timeOut = false;
     bool receivedReply = false;
     
-    Serial.print("My: ");
+    Serial.print(F("My: "));
     Serial.println(myAddress);
     radioP->stopListening();
     radioP->flush_tx();
     radioP->openWritingPipe(serverAddr);
     radioP->openReadingPipe(1, myAddress);
 
-    message = packMessage("P", &serverAddr, &myAddress, 0, 0); 
+    message = packMessage("P", serverAddr, myAddress, 0, 0); 
    
     while(digitalRead(SET_BTN) == HIGH || receivedReply != true)
     {
@@ -61,6 +61,8 @@ void placementMode(RF24 *radioP)
         radioP->stopListening();
         radioP->flush_tx();
     
+        Serial.println(message);
+
         if(!radioP->write(message.c_str(), 32))
         {
             radioP->txStandBy();
@@ -83,7 +85,7 @@ void placementMode(RF24 *radioP)
         }
         else
         {
-            Serial.println("First try");
+            Serial.println(F("First try"));
             messageSent =  true;
         }
 
@@ -96,7 +98,7 @@ void placementMode(RF24 *radioP)
 
             endTime = millis() + 1000;
 
-            Serial.println("Waiting..");
+            Serial.println(F("Waiting.."));
             while(!radioP->available())
             {
                 if(millis() >= endTime)
@@ -109,7 +111,7 @@ void placementMode(RF24 *radioP)
             if(radioP->available() && timeOut == false)
             {
                 radioP->read(&packedReply,32);
-                Serial.println("Received reply"); 
+                Serial.println(F("Received reply")); 
                 //Get the index of the spacer before the command
                 while(numOfSpacers != 1 && indx < 32)
                 {
@@ -136,7 +138,7 @@ void placementMode(RF24 *radioP)
                 //Verify the command
                 if(command == "PR")
                 {
-                    Serial.println("Verified");
+                    Serial.println(F("Verified"));
                     digitalWrite(ERROR_LED, LOW);
                     digitalWrite(STATUS_LED, HIGH);
                     receivedReply = true;
@@ -149,14 +151,14 @@ void placementMode(RF24 *radioP)
 
             if(receivedReply == false)
             {
-                Serial.println("Did not receive reply");
+                Serial.println(F("Did not receive reply"));
                 digitalWrite(ERROR_LED, HIGH);
                 digitalWrite(STATUS_LED, LOW);
             }
         }
         else
         {
-            Serial.println("Could not send");
+            Serial.println(F("Could not send"));
             digitalWrite(ERROR_LED, HIGH);
             digitalWrite(STATUS_LED, LOW);
             receivedReply = false;
@@ -167,7 +169,7 @@ void placementMode(RF24 *radioP)
     radioP->stopListening();
     radioP->flush_tx();
 
-    message = packMessage("PD", &serverAddr, &myAddress, 0, 0); 
+    message = packMessage("PD", serverAddr, myAddress, 0, 0); 
 
     radioP->write(message.c_str(), 32);
     radioP->txStandBy();
@@ -205,7 +207,7 @@ void placementMode(RF24 *radioP)
 //Return:
 //  packedMessage -- string containing the packed message
 //==========================================================================
-String packMessage(String command, byte *targetAddr, byte *senderAddr,
+String packMessage(String command, byte targetAddr, byte senderAddr,
         float tempData = 0, int motionData = 0)
 {
     /*
@@ -232,7 +234,8 @@ String packMessage(String command, byte *targetAddr, byte *senderAddr,
     }
 
     //Add targetAddr to message array
-    numberHolder = static_cast<String>(*targetAddr);     
+    numberHolder = static_cast<String>(targetAddr);     
+    Serial.println(numberHolder);
     for(byte indx = 0; indx < numberHolder.length(); indx++)
     {
         packedMsg[indx] = numberHolder[indx];
@@ -320,7 +323,7 @@ String packMessage(String command, byte *targetAddr, byte *senderAddr,
     
     indxStart = indxCounter;
     //Add senderAddr to message array
-    numberHolder = static_cast<String>(*senderAddr);     
+    numberHolder = static_cast<String>(senderAddr);     
     for(byte indx = 0; indx < numberHolder.length(); indx++)
     {
         packedMsg[indx + indxStart] = numberHolder[indx];
@@ -329,6 +332,12 @@ String packMessage(String command, byte *targetAddr, byte *senderAddr,
 
     //Add end char
     packedMsg[indxCounter] = '&';
+
+    
+    for(byte indx = 0; indx < 32; indx++)
+    {
+        Serial.print(packedMsg[indx]);
+    }
 
     packedStr = packedMsg;
 
@@ -499,8 +508,8 @@ bool sendMessage(RF24 *radioP, byte *receivingAddr, short *motionCnt,
     radioP->stopListening();
     radioP->openWritingPipe(*receivingAddr);
 
-    packedMessage = packMessage(command, receivingAddr, &myAddress, *temperature,
-            *motionCnt);
+    packedMessage = "SEE LINE";//packMessage(command, receivingAddr, myAddress, temperature,
+           // motionCnt);
 
     if(radioP->write(packedMessage.c_str(), 32))
     {
@@ -585,13 +594,11 @@ byte getAddrIndx(byte *address)
     if(indx >= MAX_NUM_OF_ADDRESSES)
     {
         indx = 255;
-        Serial.print("###");
+        Serial.print(F("###"));
         while(true){}
         return indx;
     }
 
-    /*Serial.print("I:");
-    Serial.println(indx);*/
    
     return indx;
 }
