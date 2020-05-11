@@ -22,8 +22,8 @@ eemprom addresses 0-2000
 .
 .
 .
-1125: ^^
-1126 - 2000: [EMPTY]
+1093: ^^
+1094 - 2000: [EMPTY]
 
 
 
@@ -35,7 +35,6 @@ addrGraph storage format:
 .
 33: ^^
 34: parentNode
-35: distanceFromStart
 |
 |Repeat above structure
 

@@ -1,17 +1,20 @@
 #include <i2c_t3.h>
 //#include <queue.h>
 
-String packMessage(String command, byte targetAddr, byte senderAddr,
-        float tempData, int motionData);
+bool packMessage(char *command, char *packedMessage, byte targetAddr, 
+        byte senderAddr, float tempData, short motionData);
 bool unpackMessage(char *packedMessage, byte *fromAddress, byte *toAddress, 
-        float *temperature, int *motionCount, String *command);
-void placementMode(RF24 *radioP);
+        float *temperature, short *motionCount, char *command);
+void placementMode(RF24 *radioP, byte *myAddress, byte *serverAddr, 
+        byte *addresses);
 void eepromWriteSingle(byte data, short memAddr);
 byte eepromReadSingle(int memAddr);
 bool sendMessage(RF24 *radioP, byte *receivingAddr, short *motionCnt, 
-        float *temperature, String *command);
-byte getAddrIndx(byte *address);
-byte findNodeWithShortestPath(byte *targetNode, byte startingNode = 0);
+        float *temperature, char *command, byte *addresses);
+byte getAddrIndx(const byte *address, const byte *addresses);
+byte findNodeWithShortestPath(const byte *targetNode, const byte *startingNode, 
+        const byte *addresses, node *addrGraph);
+void ftoa(float fVal, char *strVal);
 
 
 
@@ -28,50 +31,65 @@ byte findNodeWithShortestPath(byte *targetNode, byte startingNode = 0);
 //Return:
 //  void
 //=======================================================================
-void placementMode(RF24 *radioP)
+void placementMode(RF24 *radioP, byte *myAddress, byte *serverAddr, 
+        byte *addresses)
 {
-    //byte myAddress = addresses[0];
-    //byte serverAddr = addresses[MAX_NUM_OF_ADDRESSES-1];
     byte indx = 0;
     byte startIndx;
     byte numOfSpacers = 0;
     char packedReply[32] = {};
-    String command;
-    String message;
+    char command[COMMAND_SIZE];
+    char packedMsg[32];
     bool messageSent = false;
     bool timeOut = false;
     bool receivedReply = false;
     
     Serial.print(F("My: "));
-    Serial.println(myAddress);
+    Serial.println(*myAddress);
     radioP->stopListening();
     radioP->flush_tx();
-    radioP->openWritingPipe(serverAddr);
-    radioP->openReadingPipe(1, myAddress);
+    radioP->openWritingPipe(*serverAddr);
+    radioP->openReadingPipe(1, *myAddress);
 
-    message = packMessage("P", serverAddr, myAddress, 0, 0); 
+
+    packMessage("P__", packedMsg, *serverAddr, *myAddress, 0, 0); 
+        for(byte indx = 0; indx < 32; indx++)
+        {
+            Serial.print(packedMsg[indx]);
+        }
+        Serial.println(F(" "));
    
     while(digitalRead(SET_BTN) == HIGH || receivedReply != true)
     {
         indx = 1;
         numOfSpacers = 0;
-        command = "";
+        command[COMMAND_SIZE] = '\0';
         messageSent = false;
         timeOut = false;
+        for(byte indx = 0; indx < COMMAND_SIZE - 1; indx++)
+        {
+            command[indx] = 'X';
+        }
+        command[COMMAND_SIZE] = '\0';
+        
         radioP->stopListening();
         radioP->flush_tx();
     
-        Serial.println(message);
+        for(byte indx = 0; indx < 32; indx++)
+        {
+            Serial.print(packedMsg[indx]);
+        }
+        Serial.println(F(" "));
 
-        if(!radioP->write(message.c_str(), 32))
+        if(!radioP->write(packedMsg, 32))
         {
             radioP->txStandBy();
             //Try and forward to other addresses
-            while(addresses[indx] != 0 && addresses[indx] != serverAddr)
+            while(addresses[indx] != 0 && addresses[indx] != *serverAddr)
             {
                 radioP->openWritingPipe(addresses[indx]);
 
-                if(radioP->write(message.c_str(), 32))
+                if(radioP->write(packedMsg, 32))
                 {
                     radioP->txStandBy();
                     messageSent = true;
@@ -80,7 +98,7 @@ void placementMode(RF24 *radioP)
                 radioP->txStandBy();
                 indx++;
             }
-            radioP->openWritingPipe(serverAddr);
+            radioP->openWritingPipe(*serverAddr);
             indx = 0;
         }
         else
@@ -110,7 +128,7 @@ void placementMode(RF24 *radioP)
 
             if(radioP->available() && timeOut == false)
             {
-                radioP->read(&packedReply,32);
+                radioP->read(packedReply,32);
                 Serial.println(F("Received reply")); 
                 //Get the index of the spacer before the command
                 while(numOfSpacers != 1 && indx < 32)
@@ -132,11 +150,11 @@ void placementMode(RF24 *radioP)
                 for(byte indx2 = startIndx; packedReply[indx2] != '-';
                         indx2++)
                 {
-                    command += packedReply[indx2];
+                    command[indx2 - startIndx] = packedReply[indx2];
                 }
                 Serial.println(command);        
                 //Verify the command
-                if(command == "PR")
+                if(strcmp(command, "PR_") == 0)
                 {
                     Serial.println(F("Verified"));
                     digitalWrite(ERROR_LED, LOW);
@@ -165,13 +183,13 @@ void placementMode(RF24 *radioP)
         }
     }
     
-    radioP->openWritingPipe(serverAddr);
+    radioP->openWritingPipe(*serverAddr);
     radioP->stopListening();
     radioP->flush_tx();
 
-    message = packMessage("PD", serverAddr, myAddress, 0, 0); 
+    packMessage("PD_", packedMsg, *serverAddr, *myAddress, 0, 0); 
 
-    radioP->write(message.c_str(), 32);
+    radioP->write(packedMsg, 32);
     radioP->txStandBy();
     
     digitalWrite(ERROR_LED, LOW);
@@ -203,12 +221,13 @@ void placementMode(RF24 *radioP)
 //  (IN) tempData -- data from the temperature sensor
 //  (IN) motionData -- data from the motion sensor
 //  (IN) command -- 1-3 char command
+//  (IN) packedMessage -- char array containing the packed message
 //
 //Return:
-//  packedMessage -- string containing the packed message
+//  true -- was packed
 //==========================================================================
-String packMessage(String command, byte targetAddr, byte senderAddr,
-        float tempData = 0, int motionData = 0)
+bool packMessage(char *command, char *packedMessage, byte targetAddr, 
+        byte senderAddr, float tempData = 0.0, short motionData = 0)
 {
     /*
 	Follows the following format:
@@ -222,112 +241,119 @@ String packMessage(String command, byte targetAddr, byte senderAddr,
     255-S-70.3-12-245&
     */
 
+    const byte HOLDER_SIZE = 6;
     char packedMsg [32] = {};
-    String numberHolder;
-    String packedStr;
-    byte indxCounter = 0;
+    char numberHolder[HOLDER_SIZE] = {}; //{'X','X','X','X','X','\0'};
+    //byte numHolderIndx = 0;
+    //String packedStr;
+    byte indxCounter = 0; 
     byte indxStart = 0;
+    byte genIndx = 0;
 
     for(byte indx = 0; indx < 32; indx++)
     {
         packedMsg[indx] = '0';
+        packedMessage[indx] = '0';
     }
+    for(byte indx = 0; indx < HOLDER_SIZE - 1; indx++)
+    {
+        numberHolder[indx] = 'X';
+    }
+    numberHolder[HOLDER_SIZE] = '\0';
 
     //Add targetAddr to message array
-    numberHolder = static_cast<String>(targetAddr);     
-    Serial.println(numberHolder);
-    for(byte indx = 0; indx < numberHolder.length(); indx++)
+    itoa(targetAddr, numberHolder, 10);
+    for(byte indx = 0; indx < HOLDER_SIZE; indx++)
     {
-        packedMsg[indx] = numberHolder[indx];
+        Serial.print(numberHolder[indx]);
+    }
+    Serial.println(F(" "));
+
+    while(genIndx < HOLDER_SIZE - 1 && numberHolder[genIndx] != 'X'
+            && numberHolder[genIndx] != '\0')
+    {
+        packedMsg[genIndx] = numberHolder[genIndx];
         indxCounter++;
+        genIndx++;
     }
 
     //Add spacer and inciment our postion in the array
     packedMsg[indxCounter] = '-';
     indxCounter++;
+    genIndx = 0;
 
     //Add command to message array
     indxStart = indxCounter; 
-    if(command.length() >= 3)
+    while(genIndx < COMMAND_SIZE && command[genIndx] != '\0')
     {
-        for(byte indx = 0; indx < 3; indx++)
-        {
-            packedMsg[indx + indxStart] = command[indx];
-            indxCounter++;
-        }
-    }
-    else
-    {
-        for(byte indx = 0; indx < command.length(); indx++)
-        {
-            packedMsg[indx + indxStart] = command[indx];
-            indxCounter++;
-        }
+        packedMsg[genIndx + indxStart] = command[genIndx];
+        indxCounter++;
+        genIndx++;
     }
 
     //Add spacer and inciment our postion in the array
     packedMsg[indxCounter] = '-';
     indxCounter++;
+    genIndx = 0;
+    for(byte indx = 0; indx < HOLDER_SIZE - 1; indx++)
+    {
+        numberHolder[indx] = 'X';
+    }
+    for(byte indx = 0; indx < 5; indx++)
+    {
+        numberHolder[indx] = '0';
+    }
 
     //Add tempData to message array
-    numberHolder = static_cast<String>(tempData);
-   
+    ftoa(tempData, numberHolder); 
     indxStart = indxCounter; 
-    //Limit the length of the number to 7 chars (includes decimal)
-    if(numberHolder.length() >= 7)
+    while(genIndx < HOLDER_SIZE - 1 && numberHolder[genIndx] != 'X'
+            && numberHolder[genIndx] != '\0')
     {
-        for(byte indx = 0; indx < 7; indx++)
-        {
-            packedMsg[indx + indxStart] = numberHolder[indx];
-            indxCounter++;
-        }
-    }
-    else
-    {
-        for(byte indx = 0; indx < numberHolder.length(); indx++)
-        {
-            packedMsg[indx + indxStart] = numberHolder[indx];
-            indxCounter++;
-        }
+        packedMsg[genIndx + indxStart] = numberHolder[genIndx];
+        indxCounter++;
+        genIndx++;
     }
 
     //Add spacer and inciment our postion in the array
     packedMsg[indxCounter] = '-';
     indxCounter++;
+    genIndx = 0;
+    for(byte indx = 0; indx < HOLDER_SIZE - 1; indx++)
+    {
+        numberHolder[indx] = 'X';
+    }
     
     //Add motion to message array
-    numberHolder = static_cast<String>(motionData);
+    itoa(motionData, numberHolder, 10);
     
     indxStart = indxCounter; 
-    //Limit the length of the number to 7 chars
-    if(numberHolder.length() >= 7)
+    while(genIndx < HOLDER_SIZE - 1 && numberHolder[genIndx] != 'X'
+            && numberHolder[genIndx] != '\0')
     {
-        for(byte indx = 0; indx < 7; indx++)
-        {
-            packedMsg[indx + indxStart] = numberHolder[indx];
-            indxCounter++;
-        }
-    }
-    else
-    {
-        for(byte indx = 0; indx < numberHolder.length(); indx++)
-        {
-            packedMsg[indx + indxStart] = numberHolder[indx];
-            indxCounter++;
-        }
+        packedMsg[genIndx + indxStart] = numberHolder[genIndx];
+        indxCounter++;
+        genIndx++;
     }
      
     //Add spacer and inciment our postion in the array
     packedMsg[indxCounter] = '-';
     indxCounter++;
-    
+    genIndx = 0;
+    for(byte indx = 0; indx < HOLDER_SIZE - 1; indx++)
+    {
+        numberHolder[indx] = 'X';
+    }
+
     indxStart = indxCounter;
     //Add senderAddr to message array
-    numberHolder = static_cast<String>(senderAddr);     
-    for(byte indx = 0; indx < numberHolder.length(); indx++)
+    itoa(senderAddr, numberHolder, 10);
+    while(genIndx < HOLDER_SIZE - 1 && numberHolder[genIndx] != 'X'
+            && numberHolder[genIndx] != '\0')
     {
-        packedMsg[indx + indxStart] = numberHolder[indx];
+        packedMsg[genIndx + indxStart] = numberHolder[genIndx];
         indxCounter++;
+        genIndx++;
     }
 
     //Add end char
@@ -336,12 +362,10 @@ String packMessage(String command, byte targetAddr, byte senderAddr,
     
     for(byte indx = 0; indx < 32; indx++)
     {
-        Serial.print(packedMsg[indx]);
+        packedMessage[indx] = packedMsg[indx];
     }
 
-    packedStr = packedMsg;
-
-    return packedStr;
+    return true;
 }
 
 
@@ -360,7 +384,7 @@ String packMessage(String command, byte targetAddr, byte senderAddr,
 //  false -- unpacking failed
 
 bool unpackMessage(char *packedMessage, byte *fromAddress, byte *toAddress, 
-        float *temperature, int *motionCount, String *command)
+        float *temperature, short *motionCount, char *command)
 {
     /*
 	Follows the following format:
@@ -375,63 +399,90 @@ bool unpackMessage(char *packedMessage, byte *fromAddress, byte *toAddress,
     */
 
     byte indx = 0;
-    String stringHolder;
+    byte stringHolderIndx = 0;
+    char stringHolder[11];
     
+    for(byte indx2 = 0; indx2 < 10; indx2++)
+    {
+        stringHolder[indx2] = 'X';
+    }
+    stringHolder[10] = '\0';
+
     //TODO: Add a check to make sure the message was formated right
 
     //Get the toAddress
     while(packedMessage[indx] != '-')
     {
-        stringHolder += packedMessage[indx];
+        stringHolder[stringHolderIndx] = packedMessage[indx];
         indx++;
+        stringHolderIndx++;
     }
 
-    *toAddress = atoi(stringHolder.c_str());
+    *toAddress = atoi(stringHolder);
 
     indx++;
-    stringHolder = "";
+    stringHolderIndx = 0;
+    for(byte indx2 = 0; indx2 < 10; indx2++)
+    {
+        stringHolder[indx2] = 'X';
+    }
 
     //Get the command
     while(packedMessage[indx] != '-')
     {
-        stringHolder += packedMessage[indx];
+        command[stringHolderIndx] = packedMessage[indx];
         indx++;
+        stringHolderIndx++;
     }
 
-    *command = stringHolder;
     indx++;
-    stringHolder = "";
+    stringHolderIndx = 0;
+    for(byte indx2 = 0; indx2 < 10; indx2++)
+    {
+        stringHolder[indx2] = 'X';
+    }
 
     //Get temperature data
     while(packedMessage[indx] != '-')
     {
-        stringHolder += packedMessage[indx];
+        stringHolder[stringHolderIndx] = packedMessage[indx];
         indx++;
+        stringHolderIndx++;
     }
-    *temperature = atof(stringHolder.c_str());
+   *temperature = atof(stringHolder);
 
     indx++;
-    stringHolder = "";
+    stringHolderIndx = 0;
+    for(byte indx2 = 0; indx2 < 10; indx2++)
+    {
+        stringHolder[indx2] = 'X';
+    }
 
     //Get motion count data
     while(packedMessage[indx] != '-')
     {
-        stringHolder += packedMessage[indx];
+        stringHolder[stringHolderIndx] = packedMessage[indx];
         indx++;
+        stringHolderIndx++;
     }
-    *motionCount = atoi(stringHolder.c_str());
+    *motionCount = atoi(stringHolder);
 
     indx++;
-    stringHolder = "";
+    stringHolderIndx = 0;
+    for(byte indx2 = 0; indx2 < 10; indx2++)
+    {
+        stringHolder[indx2] = 'X';
+    }
 
     //Get the fromAddress
     while(packedMessage[indx] != '&')
     {
-        stringHolder += packedMessage[indx];
+        stringHolder[stringHolderIndx] = packedMessage[indx];
         indx++;
+        stringHolderIndx++;
     }
 
-    *fromAddress = atoi(stringHolder.c_str());
+    *fromAddress = atoi(stringHolder);
 
     return true;
 }
@@ -498,9 +549,11 @@ byte eepromReadSingle(int memAddr)
 //  false -- wasnt able to send to any hub
 //=========================================================================
 bool sendMessage(RF24 *radioP, byte *receivingAddr, short *motionCnt, 
-        float *temperature, String command)
+        float *temperature, char *command, byte *addresses)
 {
-    String packedMessage;
+    byte *myAddress = &addresses[0];
+    byte *serverAddr = &addresses[MAX_NUM_OF_ADDRESSES - 1]; 
+    char packedMessage[32];
     byte addrIndx = 1;
     bool messageSent = false;
     byte hub2SendTo;
@@ -508,10 +561,10 @@ bool sendMessage(RF24 *radioP, byte *receivingAddr, short *motionCnt,
     radioP->stopListening();
     radioP->openWritingPipe(*receivingAddr);
 
-    packedMessage = "SEE LINE";//packMessage(command, receivingAddr, myAddress, temperature,
-           // motionCnt);
+    packMessage(command, packedMessage, *receivingAddr, *myAddress, *temperature,
+           *motionCnt);
 
-    if(radioP->write(packedMessage.c_str(), 32))
+    if(radioP->write(packedMessage, 32))
     {
         messageSent = true;
     }
@@ -520,18 +573,21 @@ bool sendMessage(RF24 *radioP, byte *receivingAddr, short *motionCnt,
         if(hasGraph == true)
         {
             byte indx = 0;
-            hub2SendTo = findNodeWithShortestPath(receivingAddr);
+            hub2SendTo = findNodeWithShortestPath(receivingAddr, myAddress, 
+                    addresses, addrGraph);
             
-            if(!radioP->write(&packedMessage, 32))
+            if(!radioP->write(packedMessage, 32))
             {
                 //try and see if there is a path from another adjacent hub
                 while(indx < MAX_NUM_OF_ADDRESSES && 
-                        addrGraph[getAddrIndx(&myAddress)].adjNodes[indx] != 0)
+                        addrGraph[getAddrIndx(myAddress, addresses)]
+                        .adjNodes[indx] != 0)
                 {
                     hub2SendTo = findNodeWithShortestPath(
-                            &addrGraph[getAddrIndx(&myAddress)].adjNodes[indx]);
+                            &addrGraph[getAddrIndx(myAddress, addresses)]
+                            .adjNodes[indx], myAddress, addresses, addrGraph);
 
-                    if(hub2SendTo != 0 && radioP->write(&packedMessage, 32))
+                    if(hub2SendTo != 0 && radioP->write(packedMessage, 32))
                     {
                         messageSent = true;
                         break;
@@ -549,7 +605,7 @@ bool sendMessage(RF24 *radioP, byte *receivingAddr, short *motionCnt,
                     MAX_NUM_OF_ADDRESSES-1)
             {
                 radioP->openWritingPipe(&addresses[addrIndx]);
-                if(radioP->write(packedMessage.c_str(), 32))
+                if(radioP->write(packedMessage, 32))
                 {
                     messageSent = true;
                     break;
@@ -558,7 +614,7 @@ bool sendMessage(RF24 *radioP, byte *receivingAddr, short *motionCnt,
             }
         }
     }
-    radioP->openWritingPipe(&serverAddr);
+    radioP->openWritingPipe(serverAddr);
     radioP->startListening();
     
     if(messageSent == true)
@@ -582,7 +638,7 @@ bool sendMessage(RF24 *radioP, byte *receivingAddr, short *motionCnt,
 //Returns:
 //  byte -- the index for the given address
 //=========================================================================
-byte getAddrIndx(byte *address)
+byte getAddrIndx(const byte *address, const byte *addresses)
 {
     byte indx = 0;
 
@@ -617,10 +673,11 @@ byte getAddrIndx(byte *address)
 //  0 -- if failed
 //  2-255 -- address of the node that starts the path
 //=========================================================================
-byte findNodeWithShortestPath(byte *targetNode, byte startingNode)
+byte findNodeWithShortestPath(const byte *targetNode, const byte *startingNode, 
+        const byte *addresses, node *addrGraph)
 {
     bool haveVisited[MAX_NUM_OF_ADDRESSES];
-    //byte previusNode = 0;
+    const byte *myAddress = &addresses[0];
     byte currentNode = 0;
     byte indx;
     byte adjNode;
@@ -633,38 +690,38 @@ byte findNodeWithShortestPath(byte *targetNode, byte startingNode)
 
     if(startingNode == 0)
     {
-        currentNode = myAddress;
+        currentNode = *myAddress;
     }
     else
     {
-        currentNode = startingNode; 
+        currentNode = *startingNode; 
     }
     graphQueue.push(currentNode);
-    haveVisited[getAddrIndx(&currentNode)] = true;
+    haveVisited[getAddrIndx(&currentNode, addresses)] = true;
 
     while(!graphQueue.isEmpty())
     {
         graphQueue.pop();
 
         //Queue all adjacent nodes
-        while(addrGraph[getAddrIndx(&currentNode)].adjNodes[indx] != 0)
+        while(addrGraph[getAddrIndx(&currentNode, addresses)].adjNodes[indx] != 0)
         {
-            adjNode = addrGraph[getAddrIndx(&currentNode)].adjNodes[indx];
+            adjNode = addrGraph[getAddrIndx(&currentNode, addresses)].adjNodes[indx];
 
-            if(haveVisited[getAddrIndx(&adjNode)] == false)
+            if(haveVisited[getAddrIndx(&adjNode, addresses)] == false)
             {
                 //Add to queue
                 graphQueue.push(adjNode);
 
                 //Mark as visited
-                haveVisited[getAddrIndx(&adjNode)] = true;
+                haveVisited[getAddrIndx(&adjNode, addresses)] = true;
 
                 //Add its parent node
-                addrGraph[getAddrIndx(&adjNode)].parentNode = currentNode;
+                addrGraph[getAddrIndx(&adjNode, addresses)].parentNode = currentNode;
 
                 //Get its distance to the starting node
-                addrGraph[getAddrIndx(&adjNode)].distanceFromStart = 
-                    addrGraph[getAddrIndx(&currentNode)].distanceFromStart + 1;
+                //addrGraph[getAddrIndx(&adjNode, addresses)].distanceFromStart = 
+                   // addrGraph[getAddrIndx(&currentNode, addresses)].distanceFromStart + 1;
             }
             indx++;
         }
@@ -678,10 +735,10 @@ byte findNodeWithShortestPath(byte *targetNode, byte startingNode)
 
     currentNode = *targetNode;
 
-    while(addrGraph[getAddrIndx(&currentNode)].parentNode != myAddress &&
+    while(addrGraph[getAddrIndx(&currentNode, addresses)].parentNode != *myAddress &&
             indx < MAX_NUM_OF_ADDRESSES)
     {
-        currentNode = addrGraph[getAddrIndx(&currentNode)].parentNode;
+        currentNode = addrGraph[getAddrIndx(&currentNode, addresses)].parentNode;
         indx++;
     }
     if(indx >= MAX_NUM_OF_ADDRESSES)
@@ -691,5 +748,52 @@ byte findNodeWithShortestPath(byte *targetNode, byte startingNode)
     else
     {
         return currentNode;
+    }
+}
+
+
+//============================================================================
+//Description: Takes a float value and converts to c-string
+//  Credit to enhzflep from Stackoverflow
+//  https://stackoverflow.com/a/23191607
+//
+//Arguments:
+//  (IN) fVal -- float value
+//  (OUT) strVal -- c-string to contain result
+//
+//Returns:
+//  void
+//============================================================================
+void ftoa(float fVal, char *strVal)
+{
+    int dVal, dec, indx;
+    char valHold[strlen(strVal)];
+
+    fVal += 0.005;
+
+    dVal = fVal;
+    dec = (int)(fVal * 100) % 100;
+
+    strcpy(valHold, "0");
+    strcpy(strVal, "0");
+    strVal[0] = (dec % 10) + '0';
+    strVal[1] = (dec / 10) + '0';
+    strVal[2] = '.';
+
+    indx = 3;
+    while (dVal > 0)
+    {
+        strVal[indx] = (dVal % 10) + '0';
+        dVal /= 10;
+        indx++;
+    }
+    
+    strcpy(valHold, strVal);
+    indx = (strlen(strVal) - 1);
+
+    while(indx >= 0)
+    {
+        strVal[(strlen(strVal) - 1) - indx] = valHold[indx];
+        indx--;
     }
 }

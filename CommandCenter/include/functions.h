@@ -62,13 +62,13 @@ int fullHubSetup(RF24 *radioP, hub *hasHubsP, MYSQL *sqlConnP)
     int  numOfSetupHubs;
     int  numOfHubs2Setup;
     uint8_t newHubAddr = 0;
-    uint8_t addresses2Send[32];
+    uint8_t addresses2Send[MAX_NUM_OF_ADDRS];
     bool exitFlag = false;
     string usrInput;
     string newHubName;
 
     //Initilize array
-    for(uint8_t indx = 0; indx < 32; indx++)
+    for(uint8_t indx = 0; indx < MAX_NUM_OF_ADDRS; indx++)
     {
         addresses2Send[indx] = 0;
     }
@@ -112,11 +112,12 @@ int fullHubSetup(RF24 *radioP, hub *hasHubsP, MYSQL *sqlConnP)
             exitFlag = false;
         }
         
-        if((numOfSetupHubs + numOfHubs2Setup) > 32)
+        if((numOfSetupHubs + numOfHubs2Setup) > MAX_NUM_OF_ADDRS)
         {
             std::cout << "WARNING: Number of hubs to set up will exceed max number"
-                " of allowable setup hubs.\n Exceeds 32 limit by: "
-                << ((numOfSetupHubs + numOfHubs2Setup) - 32) << std::endl;
+                " of allowable setup hubs.\n Exceeds " <<  MAX_NUM_OF_ADDRS <<
+                " limit by: " << ((numOfSetupHubs + numOfHubs2Setup) 
+                        - MAX_NUM_OF_ADDRS) << std::endl;
             exitFlag = false;
         }
     }
@@ -202,9 +203,9 @@ int fullHubSetup(RF24 *radioP, hub *hasHubsP, MYSQL *sqlConnP)
         //Hub needs addresses in an array following this format
         //myAddr, otherHubAddrs, .. .., serverAddr
         addresses2Send[0] = newHubAddr;
-        addresses2Send[31] = hasHubsP[0].address;
+        addresses2Send[MAX_NUM_OF_ADDRS - 1] = hasHubsP[0].address;
 
-        for(int i=0; i < 32; i++)
+        for(int i=0; i < MAX_NUM_OF_ADDRS; i++)
         {
             std::cout << (int)hasHubsP[i].address << " " << std::endl;
         }
@@ -234,7 +235,7 @@ int fullHubSetup(RF24 *radioP, hub *hasHubsP, MYSQL *sqlConnP)
 
         std::cout << "Sending..." << std::endl;
 
-        if(!radioP->write(&addresses2Send,32,0))
+        if(!radioP->write(&addresses2Send,MAX_NUM_OF_ADDRS,0))
         {
             std::cout << "ERROR: Cant send addresses to " << newHubName
                 << " hub!" << std::endl;
@@ -272,7 +273,7 @@ bool placementMode(uint8_t myAddress, RF24 *radioP, uint8_t hubAddr)
     uint8_t startIndx = 0;
     string command = "";
     char packedReply[32] = {};
-    char testing[32] = {"2-PR-55.3-2333-254&000000000000"};
+    char testing[32] = {"2-PR_-55.3-2333-254&00000000000"};
 
     for(uint8_t indx = 0; indx < 32; indx++)
     {
@@ -293,7 +294,7 @@ bool placementMode(uint8_t myAddress, RF24 *radioP, uint8_t hubAddr)
         << std::endl;
     std::cout << "\n\nStarting...";
 
-    while(command != "PD")
+    while(command != "PD_")
     {
         std::this_thread::sleep_for(std::chrono::milliseconds(50));
         spacerCnt =0;
@@ -337,7 +338,7 @@ bool placementMode(uint8_t myAddress, RF24 *radioP, uint8_t hubAddr)
             std::cout << "Command: " << command << std::endl;
 
             //Verify the command
-            if(command == "P")
+            if(command == "P__")
             {
                 std::cout << "Sending back.." << std::endl;
                 radioP->stopListening();

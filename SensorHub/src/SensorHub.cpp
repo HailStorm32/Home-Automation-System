@@ -25,42 +25,43 @@ const byte STATUS_LED = 7;
 const byte ERROR_LED = 8;
 const byte SET_BTN = A1;
 const byte EEPROM_ADDR = 0x50; //1010000
-const byte MAX_ADDR_SENDING_CAP = 8;
-const short VARIABLE_MEM_START = 0;
-const short ADDR_ARRAY_MEM_START = VARIABLE_MEM_START + 4;
-const short GRAPH_ARRAY_MEM_START = 
-    ADDR_ARRAY_MEM_START + MAX_NUM_OF_ADDRESSES;
+const byte COMMAND_SIZE = 3;
 
 struct node
 {
     byte adjNodes[MAX_NUM_OF_ADDRESSES];
     byte parentNode;
-    byte distanceFromStart;
 };
 
-byte addresses[MAX_NUM_OF_ADDRESSES] = {};//hub's address allways at [0] and server's at [31]
-byte myAddress = 0;
-byte serverAddr = 0;
 node addrGraph[MAX_NUM_OF_ADDRESSES];
 
 bool hasGraph = false;
 
 #include "../include/functions.h"
 
-//LOCAL VARIABLS
-bool hasDoneSetup = false;
-char packedMessage[32];
-String command;
-byte fromAddress;
-byte toAddress;
-float temperature = 0;
-int motionCount = 0;
 
 int main()
 {
+    //LOCAL VARIABLS
+    bool hasDoneSetup = false;
+    char packedMessage[32];
+    char command[COMMAND_SIZE + 1];//Need an extra byte for null char
+    byte fromAddress;
+    byte toAddress;
+    float temperature = 0;
+    short motionCount = 0;
+    const byte MAX_ADDR_SENDING_CAP = 8;
+    const short VARIABLE_MEM_START = 0;
+    const short ADDR_ARRAY_MEM_START = VARIABLE_MEM_START + 4;
+    const short GRAPH_ARRAY_MEM_START = 
+        ADDR_ARRAY_MEM_START + MAX_NUM_OF_ADDRESSES;
+
+    byte addresses[MAX_NUM_OF_ADDRESSES] = {};//hub's address allways at [0] and server's at [31]
+    byte myAddress = 0;
+    byte serverAddr = 0;
+
     Serial.begin(9600);//For testing
-    pinMode(SET_BTN, INPUT);
-    pinMode(STATUS_LED, OUTPUT);
+    pinMode(SET_BTN, INPUT); pinMode(STATUS_LED, OUTPUT);
     pinMode(ERROR_LED, OUTPUT);
     while (!Serial && millis() < 4000 );
     
@@ -88,7 +89,6 @@ int main()
             addrGraph[indx].adjNodes[indx2] = 0;
         }
         addrGraph[indx].parentNode = 0;
-        addrGraph[indx].distanceFromStart = 255;
     }
 
     myAddress = DEFAULT_ADDR;
@@ -196,7 +196,7 @@ int main()
         }
         
         //Start placement mode
-        placementMode(&radio); 
+        placementMode(&radio, &myAddress, &serverAddr, addresses); 
         Serial.println(F("Exit"));     
 
         //store that we have finished setup in storage
@@ -209,26 +209,33 @@ int main()
     radio.openWritingPipe(serverAddr);
 
 ///////////////////// RUNNING CODE ////////////////// 
+    
     while(true)
     {
         while(!radio.available()) {}
 
-        radio.read(&packedMessage, 32);
+        radio.read(packedMessage, 32);
 
         unpackMessage(packedMessage, &fromAddress, &toAddress, &temperature, 
-                &motionCount, &command);
+                &motionCount, command);
 
         if(toAddress == myAddress)
         {
             //If the command is Address Update Begin
-            if(command == "AUB")
+            if(strcmp(command, "AUB") == 0)
             {
-                int *totalNumOfSends = &motionCount;
+                short *totalNumOfSends = &motionCount;
                 //float *numOfAddrs2Recieve = &temperature;
                 //byte numOfAddrs = 0;
                 byte messageIndx = 0;
                 byte addrIndx = 1;
-                String strHolder;
+                byte strHolderIndx = 0;
+                char strHolder[3];
+
+                for(byte indx = 0; indx < 3; indx++)
+                {
+                    strHolder[indx] = 'X';
+                }
 
                 //Clear out the addresses we have stored, but keep our address
                 //and the servers address
@@ -243,7 +250,7 @@ int main()
                     radio.stopListening();
 
                     //TODO: Send message to server telling it we are ready
-                    sendMessage(&radio, &serverAddr, 0,0, "RDY");
+                    sendMessage(&radio, &serverAddr, 0,0, "RDY", addresses);
 
                     //Wait for the dump of addresses
                     while(!radio.available()) {}
@@ -256,16 +263,20 @@ int main()
                         while(packedMessage[messageIndx] != '-' 
                                 || packedMessage[messageIndx] != '&')
                         {
-                            strHolder += packedMessage[messageIndx];
+                            strHolder[strHolderIndx] = packedMessage[messageIndx];
                             messageIndx++;
+                            strHolderIndx++;
                         }
                         
                         //Save the address into the array of address
-                        addresses[addrIndx] = atoi(strHolder.c_str());
+                        addresses[addrIndx] = atoi(strHolder);
 
                         messageIndx++;
                         addrIndx++;
-                        strHolder = "";
+                        for(byte indx = 0; indx < 3; indx++)
+                        {
+                            strHolder[indx] = 'X';
+                        }
                     }
                 }
 

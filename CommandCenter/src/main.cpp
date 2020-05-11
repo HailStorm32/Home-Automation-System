@@ -19,6 +19,7 @@ const uint8_t ERROR_LED = 4;
 const uint8_t NUM_OF_MENU_ITEMS = 2;
 const uint8_t VALID_MENU_ITEMS[] = {1,2};
 const bool QUERY_ERROR_CHECK = true;
+const uint8_t MAX_NUM_OF_ADDRS = 32;
 
 #include "functions.h"
 
