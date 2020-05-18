@@ -25,24 +25,21 @@ Each sensor hub will consist of the following:
 
 <ul>
     <li>1x <a href="http://www.ebay.com/itm/221808097338?_trksid=p2057872.m2749.l2649&ssPageName=STRK%3AMEBIDX%3AIT">NRF24L01 Radio Transceiver</a></li>
-    <li>1x <a href="http://www.ebay.com/itm/181943830888?_trksid=p2057872.m2749.l2649&ssPageName=STRK%3AMEBIDX%3AIT">Ardunio Nano</a></li>
+    <li>1x <a href="https://www.pjrc.com/teensy/teensyLC.html">Teensy LC</a></li>
     <li>1x <a href="http://www.ebay.com/itm/271360547550?_trksid=p2057872.m2749.l2649&ssPageName=STRK%3AMEBIDX%3AIT">DHT11 Temperature and Humidity Sensor</a></li>
-    <li>3x <a href="http://www.mouser.com/ds/2/405/cd4072b-407430.pdf">CD4072B Dual 4-Input OR Gates</a></li>
-    <li>7x 1k Resistors</li>
-    <li>1x <a href="http://www.ebay.com/itm/301122784490?_trksid=p2057872.m2749.l2649&ssPageName=STRK%3AMEBIDX%3AIT">8 position DIP Switch</a></li>
-    <li>1x 3mm OR 5mm Red LED</li>
+    <li>3x <a href="https://www.mouser.com/datasheet/2/348/br24t16-w-e-1807517.pdf">CBR24T16-WZ EEPROM</a></li>
+    <li>2x 1k Resistors</li>
+    <li>1x 330 Resistor</li>
+    <li>2x 3mm OR 5mm Red LEDs</li>
 </ul>
 
 <br>
 
 ##### Server:
 The server/main hub will likely consist of the following:
-><i>The server/main hub has not been developed, so all of these items are just ideas and may change.</i>
-><i>The server/main hub will not be started until the sensor hub has reached about 75% completion.</i>
-
 
 <ul>
-    <li>Raspberry Pi running Arch</li>
+    <li>Raspberry Pi Zero W running Arch</li>
     <li>More to come...</li>
 </ul>
 
@@ -50,24 +47,26 @@ The server/main hub will likely consist of the following:
 
 #### Setting Up:
 
-##### The IDE:
-To program the sensor hubs I am using Microsoft Visual Studio Community 2015 with an extension called Visual Micro that enables the ability to deploy to Arduino boards.
-><i>Even though this code can be written in the Arduino IDE, the large size of the code and numerous tools that Visual Studio offers makes it a lot easier to use VS.</i>
+##### Arch Linux:
 
-<ol>
-    <li><a href="https://go.microsoft.com/fwlink/?LinkId=691978&clcid=0x409">Download VS Community 2015</a></li>
-    <li>Download/Install <a href="http://www.visualmicro.com/page/Arduino-Visual-Studio-Downloads.aspx">Visual Micro extension</a></li>
-    <li>Download and install the Arduino IDE <i>(Visual Micro uses some of its libraries)</i></li>
-    <li>Put the folder(s) that are in the "Libraries" folder into Arduino's Libraries folder.</li>
-</ol>
+
+
 
 <br>
 
-##### Wiring Schematic:
-The wiring schematic for this project can be found <a href="http://www.schematics.com/project/home-automation-system-35296/">here</a>.
+##### Wiring Schematics:
+The wiring schematics for the different versions.
+<ul>
+    <li><a href="http://www.schematics.com/project/home-automation-system-35296/">Rev1</a></li>
+    <li><a href="https://www.schematics.com/project/has-rev2-168309/">Rev2</a></li>
+</ul>
 
 ###### PCB Files v1
-Eagle CAD board and schematic files can be found <a href="https://drive.google.com/drive/folders/1upeD6Ly29SMLrQmRa750bNDWt7U-4B42?usp=sharing">here</a>.
+Eagle CAD board and schematic files for the different verions. 
+<ul>
+    <li><a href="https://drive.google.com/drive/folders/1upeD6Ly29SMLrQmRa750bNDWt7U-4B42?usp=sharing">Rev1</a></li>
+    <li>Rev2 (no board created)</li>
+</ul>
 
 <br>
 
