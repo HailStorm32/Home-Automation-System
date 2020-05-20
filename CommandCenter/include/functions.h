@@ -542,3 +542,251 @@ bool updateHubList(MYSQL *sqlConnP, hub *hasHubsP, int *numOfSetupHubsP)
     }
     return true;
 }
+
+
+//==================================================================
+//Description: Sets up test hubs. A quicker version of fullHubSetup
+//
+//Arguments:
+//  (IN) radioP -- pointer to radio instance
+//  (IN) hasHubsP -- pointer to struct that contains the hub list
+//  (IN) sqlConnP -- pointer to sql connection
+//
+//Return:
+//  0 -- if setup succeeded
+//  1 -- if setup failed 
+//  2 -- user requested exit
+//=================================================================
+int testHubSetup(RF24 *radioP, hub *hasHubsP, MYSQL *sqlConnP)
+{
+    const uint8_t DEFAULT_HUB_ADDR = 2;
+
+    MYSQL_RES *sqlResult;
+    MYSQL_ROW sqlRow;
+    int  numOfSetupHubs;
+    int  numOfHubs2Setup;
+    uint8_t newHubAddr = 0;
+    uint8_t addresses2Send[MAX_NUM_OF_ADDRS];
+    bool exitFlag = false;
+    string usrInput;
+    string newHubName;
+
+    //Initilize array
+    for(uint8_t indx = 0; indx < MAX_NUM_OF_ADDRS; indx++)
+    {
+        addresses2Send[indx] = 0;
+    }
+    
+    //Get number of hubs setup from database
+    if(!getNumOfSetupHubs(sqlConnP, &numOfSetupHubs))
+    {
+        return 1;
+    }
+
+    system("clear");
+
+    //Get and varify number of hubs to setup from user
+    while(!exitFlag)
+    {
+        std::cout << "\nEnter how many hubs will be setup: ";
+        std::cin >> usrInput;
+
+        //Allow user to quit
+        if(usrInput[0] == 'q' || usrInput[0] == 'Q')
+        {
+            system("clear");
+            return 2;
+        }
+
+        if(!isNumber(usrInput))
+        {
+            std::cout << "WARNING: Entered value is not a number." << std::endl;
+            numOfHubs2Setup = 1;
+        }
+        else
+        {
+            numOfHubs2Setup = std::stoi(usrInput);
+            exitFlag = true;
+        }
+        
+        if(numOfHubs2Setup <= 0)
+        {
+            std::cout << "WARNING: Number of hubs to set up needs to be "
+                "greater than 0"  << std::endl;
+            exitFlag = false;
+        }
+        
+        if((numOfSetupHubs + numOfHubs2Setup) > MAX_NUM_OF_ADDRS)
+        {
+            std::cout << "WARNING: Number of hubs to set up will exceed max number"
+                " of allowable setup hubs.\n Exceeds " <<  MAX_NUM_OF_ADDRS <<
+                " limit by: " << ((numOfSetupHubs + numOfHubs2Setup) 
+                        - MAX_NUM_OF_ADDRS) << std::endl;
+            exitFlag = false;
+        }
+    }
+         
+    radioP->begin(); 
+    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+
+    radioP->setRetries(1, 15);
+    radioP->setChannel(124);
+
+    //Setup each hub
+    for(uint8_t indx = 0; (int)indx < numOfHubs2Setup; indx++)
+    {
+        system("clear");
+        std::cout << "Entering setup of hub " << (int)indx + 1 << " of "
+            << numOfHubs2Setup << "." << std::endl;
+        
+        //Get a name for the hub
+        newHubName = "test";
+
+        if(!retrieveAddrs(sqlConnP, hasHubsP))
+        {
+            return 1;
+        }
+
+        //Get number of hubs setup from database
+        if(!getNumOfSetupHubs(sqlConnP, &numOfSetupHubs))
+        {
+            return 1;
+        }
+
+        std::cout << "\nCreating address..." << std::endl;
+        
+        exitFlag = false;
+        while(!exitFlag)
+        {
+            exitFlag = true;
+            newHubAddr = (uint8_t)(rand() % 255 + 2);
+
+            //Make sure generated address isnt already taken
+            for(int indx = 0; indx << numOfSetupHubs; indx++)
+            {
+                if(newHubAddr == hasHubsP[indx].address)
+                {
+                    exitFlag = false;
+                    break;
+                }
+            }
+        }
+         
+        //Update the database with the info we just got
+        numOfSetupHubs++;
+        hasHubsP[numOfSetupHubs - 1].address = newHubAddr;
+        hasHubsP[numOfSetupHubs - 1].name = newHubName;
+
+        std::cout << "Updating database..." << std::endl; 
+        if(!updateSetupCount(sqlConnP, &numOfSetupHubs) || 
+                !updateHubList(sqlConnP, hasHubsP, &numOfSetupHubs))
+        {return 1;}
+
+        std::cout << "Address for hub is: " << (int)newHubAddr << std::endl; 
+
+        //Get addresses ready for sending
+        //Hub needs addresses in an array following this format
+        //myAddr, otherHubAddrs, .. .., serverAddr
+        addresses2Send[0] = newHubAddr;
+        addresses2Send[MAX_NUM_OF_ADDRS - 1] = hasHubsP[0].address;
+
+        for(int i=0; i < MAX_NUM_OF_ADDRS; i++)
+        {
+            std::cout << (int)hasHubsP[i].address << " " << std::endl;
+        }
+        
+        if(numOfSetupHubs > 1)
+        {
+            for(uint8_t indx = 1; indx < (numOfSetupHubs - 1); indx++)
+            {
+                addresses2Send[indx] = hasHubsP[indx].address;
+            }
+        }
+
+        system("clear");
+        std::cout << "\nPlease hold the button on your hub until the"
+            " status LED turns solid." 
+            "\n\nPress [ENTER] once complete." << std::endl;
+        std::cin.ignore();
+        std::cin.get();
+
+        //TODO: Send new address to hub as well as the rest of the addresses
+        std::this_thread::sleep_for(std::chrono::milliseconds(300));
+        std::cout << "\n\nPreparing to send addresses to " 
+            << newHubName << " hub..." << std::endl; 
+
+        radioP->openWritingPipe(DEFAULT_HUB_ADDR);
+        radioP->stopListening();
+
+        std::cout << "Sending..." << std::endl;
+
+        if(!radioP->write(&addresses2Send,MAX_NUM_OF_ADDRS,0))
+        {
+            std::cout << "ERROR: Cant send addresses to " << newHubName
+                << " hub!" << std::endl;
+            return 1;
+        }
+        
+        std::cout << "\nSent!" << std::endl;
+
+        if(!placementMode(hasHubsP[0].address, radioP, newHubAddr))
+        {
+            return 1;
+        }
+    }
+    system("clear");
+    return 0;
+}
+
+
+//=======================================================================
+//Description: Remove test setups from database
+//
+//Arguments:
+//  (IN) sqlConnP -- pointer to sql connection
+//
+//Return:
+//  true -- secceeded
+//  false -- failed
+//====================================================================
+bool removeTestHubs(MYSQL *sqlConnP)
+{
+    MYSQL_RES *sqlResult;
+    MYSQL_ROW sqlRow;
+    string sqlQuery;
+
+    if(mysql_ping(sqlConnP))
+    {
+       std::cout << "\nERROR: Ping to database from 'removeTestHubs' failed!"
+           << std::endl;
+       mysql_close(sqlConnP);
+       return false;
+    }
+    
+    sqlQuery = "UPDATE variables SET value='1' WHERE name='numOfSetupHubs'";
+    std::cout << sqlQuery << std::endl;
+    if(mysql_query(sqlConnP, sqlQuery.c_str()) 
+            && QUERY_ERROR_CHECK)
+    {
+        std::cout << "\nERROR: sql query failed to update list!" 
+            << std::endl;
+        std::cout << mysql_error(sqlConnP) << endl;
+        mysql_close(sqlConnP);
+        return false;
+    }
+
+    
+    sqlQuery = "DELETE FROM hubs WHERE name='test'";
+    std::cout << sqlQuery << std::endl;
+    if(mysql_query(sqlConnP, sqlQuery.c_str()) 
+            && QUERY_ERROR_CHECK)
+    {
+        std::cout << "\nERROR: sql query failed to update list!" 
+            << std::endl;
+        std::cout << mysql_error(sqlConnP) << endl;
+        mysql_close(sqlConnP);
+        return false;
+    }
+
+    return true;
+}

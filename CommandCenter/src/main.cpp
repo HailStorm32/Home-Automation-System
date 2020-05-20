@@ -16,8 +16,8 @@
 
 const uint8_t STATUS_LED = 1;
 const uint8_t ERROR_LED = 4;
-const uint8_t NUM_OF_MENU_ITEMS = 2;
-const uint8_t VALID_MENU_ITEMS[] = {1,2};
+const uint8_t NUM_OF_MENU_ITEMS = 4;
+const uint8_t VALID_MENU_ITEMS[] = {1,2,3,4};
 const bool QUERY_ERROR_CHECK = true;
 const uint8_t MAX_NUM_OF_ADDRS = 32;
 
@@ -139,11 +139,13 @@ int main()
     {
         userEntry = "";
 
-        std::cout << "Welcome to the Home Automation System Server Interface!" 
+        std::cout << "Welcome to the H.A.S. Server Interface!" 
             << std::endl;
         std::cout << "Menu:" << std::endl;
         std::cout << "1). Setup new hub \n"
-            "2). Exit" << std::endl;
+            "2). Test Setup \n"
+            "3). Remove Tests \n"
+            "4). Exit" << std::endl;
         std::cout << "\nChoice:";
         std::cin >> userEntry; 
        
@@ -171,6 +173,18 @@ int main()
                 }
                 break;
             case 2:
+                if(testHubSetup(&radio, hasHubs, sqlConn) == 1)
+                {
+                    return 1;
+                }
+                break;
+            case 3:
+                if(removeTestHubs(sqlConn))
+                {
+                    std::cout << "\n\nTest hubs removed..." << std::endl;
+                }
+                break;
+            case 4:
                 exitFlag = true;
                 break;
             default:
