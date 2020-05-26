@@ -60,6 +60,11 @@ int main()
     {
         hubAddrs[indx] = 0;
     }
+
+    for(int indx = 0; indx < MAX_NUM_OF_ADDRS; indx++)
+    {
+        hasHubs[indx].lastUsedId = 0;
+    }
     
     if(!QUERY_ERROR_CHECK)
     {
@@ -171,6 +176,9 @@ int main()
                 {
                     return 1;
                 }
+                
+                
+
                 break;
             case 2:
                 if(testHubSetup(&radio, hasHubs, sqlConn) == 1)

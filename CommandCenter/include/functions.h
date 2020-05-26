@@ -2,15 +2,19 @@ struct hub
 {
     uint8_t address;
     string name;
+    uint8_t lastUsedId;
 };
 
 bool isNumber(string inputStr);
 int fullHubSetup(RF24 *radioP, hub *hasHubsP, MYSQL *sqlConnP);
-bool placementMode(uint8_t myAddress, RF24 *radioP, uint8_t hubAddr);
+bool placementMode(uint8_t myAddress, RF24 *radioP, uint8_t hubAddr,
+        hub *hasHubsP);
 bool retrieveAddrs(MYSQL *sqlConnP, hub *hasHubsP);
 bool getNumOfSetupHubs(MYSQL *sqlConnP, int *numOfSetupHubsP);
 bool updateSetupCount(MYSQL *sqlConnP, int *numOfSetupHubsP);
 bool updateHubList(MYSQL *sqlConnP, hub *hasHubsP, int *numOfSetupHubs);
+bool removeTestHubs(MYSQL *sqlConnP);
+int testHubSetup(RF24 *radioP, hub *hasHubsP, MYSQL *sqlConnP);
 
 
 //=====================================================================
@@ -244,7 +248,7 @@ int fullHubSetup(RF24 *radioP, hub *hasHubsP, MYSQL *sqlConnP)
         
         std::cout << "\nSent!" << std::endl;
 
-        if(!placementMode(hasHubsP[0].address, radioP, newHubAddr))
+        if(!placementMode(hasHubsP[0].address, radioP, newHubAddr, hasHubsP))
         {
             return 1;
         }
@@ -266,14 +270,18 @@ int fullHubSetup(RF24 *radioP, hub *hasHubsP, MYSQL *sqlConnP)
 //  true -- placment succeeded
 //  false -- placement failed
 //=====================================================================
-bool placementMode(uint8_t myAddress, RF24 *radioP, uint8_t hubAddr)
+//TODO: Update to work with forwarding
+bool placementMode(uint8_t myAddress, RF24 *radioP, uint8_t hubAddr,
+        hub *hasHubsP)
 {
     uint8_t indx = 0;
     uint8_t spacerCnt = 0;
     uint8_t startIndx = 0;
     string command = "";
     char packedReply[32] = {};
+    //TODO: Have this message packed with packMsg function
     char testing[32] = {"2-PR_-55.3-2333-254&00000000000"};
+    bool hasSent = false;
 
     for(uint8_t indx = 0; indx < 32; indx++)
     {
@@ -300,6 +308,7 @@ bool placementMode(uint8_t myAddress, RF24 *radioP, uint8_t hubAddr)
         spacerCnt =0;
         indx = 0;
         command = "";
+        hasSent = false;
         
         radioP->startListening();
 
@@ -313,9 +322,13 @@ bool placementMode(uint8_t myAddress, RF24 *radioP, uint8_t hubAddr)
                 std::cout << packedReply[i];
             }
 
+            //TODO: check to see if we recived this message already
+            
+
             //Get the index of the spacer before the command
             while(spacerCnt != 1 && indx < 31)
             {
+                radioP->openWritingPipe(hubAddr);
                 if(packedReply[indx] == '-')
                 {
                     spacerCnt++;
@@ -343,10 +356,23 @@ bool placementMode(uint8_t myAddress, RF24 *radioP, uint8_t hubAddr)
                 std::cout << "Sending back.." << std::endl;
                 radioP->stopListening();
                 radioP->flush_tx();
+                indx = 1;
 
                 if(!radioP->write(&testing,32))
                 {
-                    std::cout << "Sending Failed!" << std::endl;
+                    std::cout << "target send Failed!" << std::endl;
+                
+                    //Try and forward to other hubs
+                    while(indx < MAX_NUM_OF_ADDRS && 
+                            hasHubsP[indx].address != 0)
+                    {
+                        radioP->openWritingPipe(hasHubsP[indx].address);
+                        if(!radioP->write(&testing,32))
+                        {
+                            std::cout << indx << " send Failed!" << std::endl;
+                        }
+                        indx++;
+                    }
                 }
                 radioP->txStandBy();
             }
@@ -729,7 +755,7 @@ int testHubSetup(RF24 *radioP, hub *hasHubsP, MYSQL *sqlConnP)
         
         std::cout << "\nSent!" << std::endl;
 
-        if(!placementMode(hasHubsP[0].address, radioP, newHubAddr))
+        if(!placementMode(hasHubsP[0].address, radioP, newHubAddr, hasHubsP))
         {
             return 1;
         }
@@ -746,9 +772,9 @@ int testHubSetup(RF24 *radioP, hub *hasHubsP, MYSQL *sqlConnP)
 //  (IN) sqlConnP -- pointer to sql connection
 //
 //Return:
-//  true -- secceeded
+//  true -- succeeded
 //  false -- failed
-//====================================================================
+//========================================================================
 bool removeTestHubs(MYSQL *sqlConnP)
 {
     MYSQL_RES *sqlResult;
@@ -789,4 +815,51 @@ bool removeTestHubs(MYSQL *sqlConnP)
     }
 
     return true;
+}
+
+
+//=========================================================================
+//Description: Requests all the hubs for a list of hubs that are adj
+//  to them. Then create a graph and send it to all the hubs
+//
+//Arguments:
+//  (IN) sqlConnP -- pointer to sql connection
+//  (IN) radioP -- pointer to radio instance
+//  (IN) hasHubsP -- pointer to struct that holds hub data
+//
+//Return:
+//  true -- graph was made
+//  false -- graph was not made
+//==========================================================================
+bool buildAndSendGraph(MYSQL *sqlConnP, RF24 *radioP, hub *hasHubsP)
+{
+    struct node
+    {
+        uint8_t adjNodes[MAX_NUM_OF_ADDRS];
+        uint8_t parentNode;
+    };
+
+    node addrGraph[MAX_NUM_OF_ADDRS];
+    int numOfSetupHubs;
+    
+
+    getNumOfSetupHubs(sqlConnP, &numOfSetupHubs);
+    retrieveAddrs(sqlConnP, hasHubsP);
+
+    //Zero out the addrGraph
+    for(uint8_t nodeIndx = 0; nodeIndx < MAX_NUM_OF_ADDRS; nodeIndx++)
+    {
+        for(uint8_t addrIndx = 0; addrIndx < MAX_NUM_OF_ADDRS; addrIndx++)
+        {
+            addrGraph[nodeIndx].adjNodes[addrIndx] = 0;
+        }
+        addrGraph[nodeIndx].parentNode = 0;
+    }
+
+    //Request and recieve the ajd list from all setup hubs
+    for(uint8_t indx = 0; indx < numOfSetupHubs - 1; indx++)
+    {
+      //TODO: Need to complete  
+    }
+
 }

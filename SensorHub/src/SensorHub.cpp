@@ -26,6 +26,12 @@ const byte ERROR_LED = 8;
 const byte SET_BTN = A1;
 const byte EEPROM_ADDR = 0x50; //1010000
 const byte COMMAND_SIZE = 3;
+const short VARIABLE_MEM_START = 0;
+const short ADDR_ARRAY_MEM_START = VARIABLE_MEM_START + 4;
+const short GRAPH_ARRAY_MEM_START = 
+    (ADDR_ARRAY_MEM_START + MAX_NUM_OF_ADDRESSES) + 1;
+const short MESSAGE_IDS_MEM_START = 
+    (GRAPH_ARRAY_MEM_START + ((MAX_NUM_OF_ADDRESSES + 1) * MAX_NUM_OF_ADDRESSES)) + 1;
 
 struct node
 {
@@ -34,6 +40,8 @@ struct node
 };
 
 node addrGraph[MAX_NUM_OF_ADDRESSES];
+
+byte addresses[MAX_NUM_OF_ADDRESSES] = {};//hub's address allways at [0] and server's at [31]
 
 bool hasGraph = false;
 
@@ -51,12 +59,8 @@ int main()
     float temperature = 0;
     short motionCount = 0;
     const byte MAX_ADDR_SENDING_CAP = 8;
-    const short VARIABLE_MEM_START = 0;
-    const short ADDR_ARRAY_MEM_START = VARIABLE_MEM_START + 4;
-    const short GRAPH_ARRAY_MEM_START = 
-        ADDR_ARRAY_MEM_START + MAX_NUM_OF_ADDRESSES;
+    bool duplicateMsg = false;
 
-    byte addresses[MAX_NUM_OF_ADDRESSES] = {};//hub's address allways at [0] and server's at [31]
     byte myAddress = 0;
     byte serverAddr = 0;
 
@@ -106,7 +110,7 @@ int main()
         }
     }
 
-    //TODO:Get haveGraph status from eeprom
+    hasGraph = eepromReadSingle(1);
 
     //check storage to see it we have already done setup
     Serial.println(F("checking.."));
@@ -133,7 +137,11 @@ int main()
         myAddress = addresses[0];
         serverAddr = addresses[MAX_NUM_OF_ADDRESSES-1];
 
-        //TODO: Get graph out of eeprom if we have one
+        //Get graph out of eeprom if we have it stored
+        if(hasGraph)
+        {
+            eepromRetrieveGraph();
+        }
 
         //For debug
         for(int i =0; i < MAX_NUM_OF_ADDRESSES; i++)
@@ -190,7 +198,7 @@ int main()
         Serial.println(F("received:"));
 
         //For debug
-        for(int i =0; i < MAX_NUM_OF_ADDRESSES; i++)
+        for(byte i =0; i < MAX_NUM_OF_ADDRESSES; i++)
         {
             Serial.println(addresses[i]);
         }
@@ -217,7 +225,7 @@ int main()
         radio.read(packedMessage, 32);
 
         unpackMessage(packedMessage, &fromAddress, &toAddress, &temperature, 
-                &motionCount, command);
+                &motionCount, command, duplicateMsg);
 
         if(toAddress == myAddress)
         {

@@ -4,7 +4,7 @@
 bool packMessage(char *command, char *packedMessage, byte targetAddr, 
         byte senderAddr, float tempData, short motionData);
 bool unpackMessage(char *packedMessage, byte *fromAddress, byte *toAddress, 
-        float *temperature, short *motionCount, char *command);
+        float *temperature, short *motionCount, char *command, bool duplicateMsg);
 void placementMode(RF24 *radioP, byte *myAddress, byte *serverAddr, 
         byte *addresses);
 void eepromWriteSingle(byte data, short memAddr);
@@ -15,7 +15,11 @@ byte getAddrIndx(const byte *address, const byte *addresses);
 byte findNodeWithShortestPath(const byte *targetNode, const byte *startingNode, 
         const byte *addresses, node *addrGraph);
 void ftoa(float fVal, char *strVal);
-
+bool eepromRetrieveGraph();
+bool eepromStoreGraph();
+byte eepromRetrieveMsgId(const byte *hub_addr);
+void eepromStoreMsgId(const byte *HUB_ADDR, const byte *ID);
+byte generateMsgId(const byte *HUB_ADDR);
 
 
 
@@ -52,15 +56,17 @@ void placementMode(RF24 *radioP, byte *myAddress, byte *serverAddr,
     radioP->openReadingPipe(1, *myAddress);
 
 
-    packMessage("P__", packedMsg, *serverAddr, *myAddress, 0, 0); 
-        for(byte indx = 0; indx < 32; indx++)
+    //packMessage("P__", packedMsg, *serverAddr, *myAddress, 0, 0); 
+        /*for(byte indx = 0; indx < 32; indx++)
         {
             Serial.print(packedMsg[indx]);
         }
-        Serial.println(F(" "));
+        Serial.println(F(" "));*/
    
     while(digitalRead(SET_BTN) == HIGH || receivedReply != true)
     {
+        packMessage("P__", packedMsg, *serverAddr, *myAddress, 0, 0); 
+
         indx = 1;
         numOfSpacers = 0;
         command[COMMAND_SIZE] = '\0';
@@ -85,15 +91,16 @@ void placementMode(RF24 *radioP, byte *myAddress, byte *serverAddr,
         {
             radioP->txStandBy();
             //Try and forward to other addresses
-            while(addresses[indx] != 0 && addresses[indx] != *serverAddr)
+            while(addresses[indx] != 0 && addresses[indx] != *serverAddr && 
+                    indx < MAX_NUM_OF_ADDRESSES)
             {
                 radioP->openWritingPipe(addresses[indx]);
 
                 if(radioP->write(packedMsg, 32))
                 {
-                    radioP->txStandBy();
+                    //radioP->txStandBy();
                     messageSent = true;
-                    break;
+                    //break;
                 }
                 radioP->txStandBy();
                 indx++;
@@ -129,6 +136,9 @@ void placementMode(RF24 *radioP, byte *myAddress, byte *serverAddr,
             if(radioP->available() && timeOut == false)
             {
                 radioP->read(packedReply,32);
+                
+                //TODO: check to see if we recived this message already
+
                 Serial.println(F("Received reply")); 
                 //Get the index of the spacer before the command
                 while(numOfSpacers != 1 && indx < 32)
@@ -186,10 +196,31 @@ void placementMode(RF24 *radioP, byte *myAddress, byte *serverAddr,
     radioP->openWritingPipe(*serverAddr);
     radioP->stopListening();
     radioP->flush_tx();
+    indx = 0;
 
     packMessage("PD_", packedMsg, *serverAddr, *myAddress, 0, 0); 
 
-    radioP->write(packedMsg, 32);
+    if(!radioP->write(packedMsg, 32))
+    {
+        radioP->txStandBy();
+        //Try and forward to other addresses
+        while(addresses[indx] != 0 && addresses[indx] != *serverAddr && 
+                indx < MAX_NUM_OF_ADDRESSES)
+        {
+            radioP->openWritingPipe(addresses[indx]);
+
+            if(radioP->write(packedMsg, 32))
+            {
+                //radioP->txStandBy();
+                messageSent = true;
+                //break;
+            }
+            radioP->txStandBy();
+            indx++;
+        }
+        radioP->openWritingPipe(*serverAddr);
+        indx = 0;
+    }
     radioP->txStandBy();
     
     digitalWrite(ERROR_LED, LOW);
@@ -233,12 +264,12 @@ bool packMessage(char *command, char *packedMessage, byte targetAddr,
 	Follows the following format:
 	
     targetAddr -> spacer -> command -> tempData -> motionData ->
-        senderAddr -> end char
+        senderAddr -> messageID -> end char
 	
     Array index#-------> 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 
-    Array index slot -->[2,5,5,-,S,-,7,0,.,3,- , 1, 2, -, 2, 4, 5, &]
+    Array index slot -->[2,5,5,-,S,-,7,0,.,3,- , 1, 2, -, 2, 4, 5, -, 1, 4, 0,&]
 	
-    255-S-70.3-12-245&
+    255-S-70.3-12-245-140&
     */
 
     const byte HOLDER_SIZE = 6;
@@ -345,9 +376,30 @@ bool packMessage(char *command, char *packedMessage, byte targetAddr,
         numberHolder[indx] = 'X';
     }
 
-    indxStart = indxCounter;
     //Add senderAddr to message array
     itoa(senderAddr, numberHolder, 10);
+
+    indxStart = indxCounter;
+    while(genIndx < HOLDER_SIZE - 1 && numberHolder[genIndx] != 'X'
+            && numberHolder[genIndx] != '\0')
+    {
+        packedMsg[genIndx + indxStart] = numberHolder[genIndx];
+        indxCounter++;
+        genIndx++;
+    }
+
+    //Add spacer and inciment our postion in the array
+    packedMsg[indxCounter] = '-';
+    indxCounter++;
+    genIndx = 0;
+    for(byte indx = 0; indx < HOLDER_SIZE - 1; indx++)
+    {
+        numberHolder[indx] = 'X';
+    }
+
+    itoa(generateMsgId(&senderAddr), numberHolder, 10);
+    
+    indxStart = indxCounter; 
     while(genIndx < HOLDER_SIZE - 1 && numberHolder[genIndx] != 'X'
             && numberHolder[genIndx] != '\0')
     {
@@ -378,28 +430,30 @@ bool packMessage(char *command, char *packedMessage, byte targetAddr,
 //  (OUT) fromAddress -- returns the senders address
 //  (OUT) toAddress -- returns the address that the message was addressed to
 //  (OUT) command -- returns the command that was in the message
+//  (OUT) duplicateMsg -- boolean value, true if message has been recieved before
 //
 //Return:
 //  true -- was able to unpack the command
 //  false -- unpacking failed
 
 bool unpackMessage(char *packedMessage, byte *fromAddress, byte *toAddress, 
-        float *temperature, short *motionCount, char *command)
+        float *temperature, short *motionCount, char *command, bool duplicateMsg)
 {
     /*
 	Follows the following format:
 	
     targetAddr -> spacer -> command -> tempData -> motionData ->
-        senderAddr -> end char
+        senderAddr -> messageID -> end char
 	
     Array index#-------> 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 
-    Array index slot -->[2,5,5,-,S,-,7,0,.,3,- , 1, 2, -, 2, 4, 5, &]
+    Array index slot -->[2,5,5,-,S,-,7,0,.,3,- , 1, 2, -, 2, 4, 5, -, 1, 4, 0,&]
 	
-    255-S-70.3-12-245&
+    255-S-70.3-12-245-140&
     */
 
     byte indx = 0;
     byte stringHolderIndx = 0;
+    byte messageId = 0;
     char stringHolder[11];
     
     for(byte indx2 = 0; indx2 < 10; indx2++)
@@ -475,7 +529,7 @@ bool unpackMessage(char *packedMessage, byte *fromAddress, byte *toAddress,
     }
 
     //Get the fromAddress
-    while(packedMessage[indx] != '&')
+    while(packedMessage[indx] != '-')
     {
         stringHolder[stringHolderIndx] = packedMessage[indx];
         indx++;
@@ -483,6 +537,33 @@ bool unpackMessage(char *packedMessage, byte *fromAddress, byte *toAddress,
     }
 
     *fromAddress = atoi(stringHolder);
+
+    indx++;
+    stringHolderIndx = 0;
+    for(byte indx2 = 0; indx2 < 10; indx2++)
+    {
+        stringHolder[indx2] = 'X';
+    }
+
+    //Get the message ID
+    while(packedMessage[indx] != '&')
+    {
+        stringHolder[stringHolderIndx] = packedMessage[indx];
+        indx++;
+        stringHolderIndx++;
+    }
+
+    messageId = atoi(stringHolder);
+
+    if(messageId == eepromRetrieveMsgId(fromAddress))
+    {
+        duplicateMsg = true;
+    }
+    else
+    {
+        duplicateMsg = false;
+        eepromStoreMsgId(fromAddress, &messageId);
+    }
 
     return true;
 }
@@ -650,7 +731,7 @@ byte getAddrIndx(const byte *address, const byte *addresses)
     if(indx >= MAX_NUM_OF_ADDRESSES)
     {
         indx = 255;
-        Serial.print(F("###"));
+        Serial.print(F("Error in 'getAddrIndx'"));
         while(true){}
         return indx;
     }
@@ -796,4 +877,139 @@ void ftoa(float fVal, char *strVal)
         strVal[(strlen(strVal) - 1) - indx] = valHold[indx];
         indx--;
     }
+}
+
+
+
+//============================================================================
+//Description: Stores the addrGraph into eeprom storage
+//
+//Arguments:
+//  void
+//Returns:
+//  true -- was able to store graph
+//  false --- was not able to store graph
+//============================================================================
+bool eepromStoreGraph()
+{
+    short memIndx = GRAPH_ARRAY_MEM_START;
+
+    for(byte nodeIndx = 0; nodeIndx < MAX_NUM_OF_ADDRESSES; nodeIndx++)
+    {
+        if(memIndx > 2000)
+        {
+            return false;
+        }
+        
+        for(byte addrIndx = 0; addrIndx < MAX_NUM_OF_ADDRESSES; addrIndx++)
+        {
+            if(memIndx > 2000)
+            {
+                return false;
+            }
+            eepromWriteSingle(addrGraph[nodeIndx].adjNodes[addrIndx], memIndx);
+            memIndx++;
+        }
+        eepromWriteSingle(addrGraph[nodeIndx].parentNode, memIndx);
+        memIndx++;
+    }
+    return true;
+}
+
+
+//============================================================================
+//Description: Gets the addrGraph into eeprom storage
+//
+//Arguments:
+//  void
+//Returns:
+//  true -- was able to get graph
+//  false --- was not able to get graph
+//============================================================================
+bool eepromRetrieveGraph()
+{
+    short memIndx = GRAPH_ARRAY_MEM_START;
+
+    for(byte nodeIndx = 0; nodeIndx < MAX_NUM_OF_ADDRESSES; nodeIndx++)
+    {
+        if(memIndx > 2000)
+        {
+            return false;
+        }
+
+        for(byte addrIndx = 0; addrIndx < MAX_NUM_OF_ADDRESSES; addrIndx++)
+        {
+            if(memIndx > 2000)
+            {
+                return false;
+            }
+            addrGraph[nodeIndx].adjNodes[addrIndx] = eepromReadSingle(memIndx);
+            memIndx++;
+        }
+        addrGraph[nodeIndx].parentNode = eepromReadSingle(memIndx);
+        memIndx++;
+    }
+    return true;
+}
+
+
+
+//============================================================================
+//Description: Gets the last message ID used by the specified hub address 
+//  from eeprom
+//
+//Arguments:
+//  (IN) HUB_ADDR -- address of the hub to look up
+//
+//Return:
+//  byte -- the last used ID by the given hub address
+//============================================================================
+byte eepromRetrieveMsgId(const byte *HUB_ADDR)
+{
+    return eepromReadSingle(getAddrIndx(HUB_ADDR, addresses) 
+            + GRAPH_ARRAY_MEM_START);
+}
+
+
+//============================================================================
+//Description: Stores the message ID used by the specified hub address 
+//  in  eeprom
+//
+//Arguments:
+//  (IN) HUB_ADDR -- address of the hub the the ID belongs to
+//  (IN) ID -- message ID to store
+//
+//Return:
+//  void
+//============================================================================
+void eepromStoreMsgId(const byte *HUB_ADDR, const byte *ID)
+{
+    eepromWriteSingle(*ID, getAddrIndx(HUB_ADDR, addresses) 
+            + GRAPH_ARRAY_MEM_START);
+}
+
+
+//============================================================================
+//Description: Calculates a three digit message ID for the given hub address
+//
+//Arguments: 
+//  (IN) -- HUB_ADDR -- address of the hub that needs the message ID
+//
+//Return:
+//  byte -- 3 digit message ID
+//============================================================================
+byte generateMsgId(const byte *HUB_ADDR)
+{
+    byte msgId;
+    
+    do
+    {
+        srand(millis());
+        msgId = rand() % 255;
+    }while(msgId == eepromRetrieveMsgId(HUB_ADDR) 
+            || msgId == 0);
+
+    eepromStoreMsgId(HUB_ADDR, &msgId);
+
+    return msgId;
 }
