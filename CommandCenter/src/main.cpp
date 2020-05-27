@@ -4,7 +4,9 @@
 #include <string>
 #include <unistd.h>
 #include <thread>
+#include <time.h>
 #include <chrono>
+#include <queue>
 
 #include <Crypto.h>
 #include <wiringPi.h>
@@ -14,12 +16,23 @@
 #include <config.h>
 
 
+
 const uint8_t STATUS_LED = 1;
 const uint8_t ERROR_LED = 4;
 const uint8_t NUM_OF_MENU_ITEMS = 4;
 const uint8_t VALID_MENU_ITEMS[] = {1,2,3,4};
 const bool QUERY_ERROR_CHECK = true;
 const uint8_t MAX_NUM_OF_ADDRS = 32;
+const uint8_t COMMAND_SIZE = 3; 
+
+
+struct node
+{
+    byte adjNodes[MAX_NUM_OF_ADDRS];
+    byte parentNode;
+};
+
+node addrGraph[MAX_NUM_OF_ADDRS];
 
 #include "functions.h"
 
@@ -109,8 +122,12 @@ int main()
         
         //TODO: Generate random number using library for server address
 
-        myAddress = (uint8_t)(rand() % 255 + 2);
-        
+        do
+        {
+            srand(time(NULL));
+            myAddress = rand() % 255;
+        }while(myAddress == 0);
+
         //Add the server address to the database
         sqlQuery = "INSERT INTO hubs VALUES('" + std::to_string(myAddress) +
             "','server')";

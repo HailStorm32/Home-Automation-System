@@ -9,6 +9,13 @@ bool isNumber(string inputStr);
 int fullHubSetup(RF24 *radioP, hub *hasHubsP, MYSQL *sqlConnP);
 bool placementMode(uint8_t myAddress, RF24 *radioP, uint8_t hubAddr,
         hub *hasHubsP);
+uint8_t getAddrIndx(uint8_t address, hub * hasHubsP);
+bool unpackMessage(char *packedMessage, uint8_t *fromAddress, uint8_t *toAddress, 
+        float *temperature, short *motionCount, char *command, bool duplicateMsg
+        , hub *hasHubsP);
+uint8_t generateMsgId(const uint8_t HUB_ADDR);
+bool packMessage(char *command, char *packedMessage, uint8_t targetAddr, 
+        uint8_t senderAddr, float tempData, short motionData, hub *hasHubsP);
 bool retrieveAddrs(MYSQL *sqlConnP, hub *hasHubsP);
 bool getNumOfSetupHubs(MYSQL *sqlConnP, int *numOfSetupHubsP);
 bool updateSetupCount(MYSQL *sqlConnP, int *numOfSetupHubsP);
@@ -178,10 +185,15 @@ int fullHubSetup(RF24 *radioP, hub *hasHubsP, MYSQL *sqlConnP)
         while(!exitFlag)
         {
             exitFlag = true;
-            newHubAddr = (uint8_t)(rand() % 255 + 2);
+
+            do
+            {
+                srand(time(NULL));
+                newHubAddr = rand() % 255;
+            }while(newHubAddr == 0);
 
             //Make sure generated address isnt already taken
-            for(int indx = 0; indx << numOfSetupHubs; indx++)
+            for(int indx = 0; indx < numOfSetupHubs; indx++)
             {
                 if(newHubAddr == hasHubsP[indx].address)
                 {
@@ -270,7 +282,6 @@ int fullHubSetup(RF24 *radioP, hub *hasHubsP, MYSQL *sqlConnP)
 //  true -- placment succeeded
 //  false -- placement failed
 //=====================================================================
-//TODO: Update to work with forwarding
 bool placementMode(uint8_t myAddress, RF24 *radioP, uint8_t hubAddr,
         hub *hasHubsP)
 {
@@ -279,15 +290,17 @@ bool placementMode(uint8_t myAddress, RF24 *radioP, uint8_t hubAddr,
     uint8_t startIndx = 0;
     string command = "";
     char packedReply[32] = {};
-    //TODO: Have this message packed with packMsg function
-    char testing[32] = {"2-PR_-55.3-2333-254&00000000000"};
+    char packedMsg[32];
     bool hasSent = false;
 
     for(uint8_t indx = 0; indx < 32; indx++)
     {
         packedReply[indx] = '*';
+        packedMsg[indx] = '*';
     }
-    
+
+    packMessage("PR_", packedMsg, hubAddr, myAddress, 0, 0, hasHubsP);
+
     radioP->openWritingPipe(hubAddr);
     radioP->openReadingPipe(1, myAddress);
 
@@ -358,7 +371,7 @@ bool placementMode(uint8_t myAddress, RF24 *radioP, uint8_t hubAddr,
                 radioP->flush_tx();
                 indx = 1;
 
-                if(!radioP->write(&testing,32))
+                if(!radioP->write(&packedMsg,32))
                 {
                     std::cout << "target send Failed!" << std::endl;
                 
@@ -367,7 +380,7 @@ bool placementMode(uint8_t myAddress, RF24 *radioP, uint8_t hubAddr,
                             hasHubsP[indx].address != 0)
                     {
                         radioP->openWritingPipe(hasHubsP[indx].address);
-                        if(!radioP->write(&testing,32))
+                        if(!radioP->write(&packedMsg,32))
                         {
                             std::cout << indx << " send Failed!" << std::endl;
                         }
@@ -381,6 +394,358 @@ bool placementMode(uint8_t myAddress, RF24 *radioP, uint8_t hubAddr,
     system("clear");
     std::cout << "\nPlacement done!" << std::endl;
     std::this_thread::sleep_for(std::chrono::milliseconds(5000));
+    return true;
+}
+
+
+//=========================================================================
+//Description: returns what index the given address is stored in the
+//  address array
+//
+//Arguments:
+//  (IN) address -- address to get the index for
+//
+//Returns:
+//  uint8_t -- the index for the given address
+//=========================================================================
+uint8_t getAddrIndx(uint8_t address, hub * hasHubsP)
+{
+    uint8_t indx = 0;
+
+    while(indx != MAX_NUM_OF_ADDRS && hasHubsP[indx].address != address)
+    {
+        indx++;
+    }
+
+    if(indx >= MAX_NUM_OF_ADDRS)
+    {
+        std::cout << "Error in 'getAddrIndx'" << std::endl;
+        while(true){}
+    }
+    return indx;
+}
+
+
+//=====================================================================
+//Description: unpacks the command, sender address and reciver address
+//  from the given packed message
+//
+//Arguments:
+//  (IN) packedMessage -- the packed message
+//  (OUT) fromAddress -- returns the senders address
+//  (OUT) toAddress -- returns the address that the message was addressed to
+//  (OUT) command -- returns the command that was in the message
+//  (OUT) duplicateMsg -- boolean value, true if message has been recieved before
+//  (IN) hasHubsP -- struct containing hub info
+//
+//Return:
+//  true -- was able to unpack the command
+//  false -- unpacking failed
+//=====================================================================
+bool unpackMessage(char *packedMessage, uint8_t *fromAddress, uint8_t *toAddress, 
+        float *temperature, short *motionCount, char *command, bool duplicateMsg
+        , hub *hasHubsP)
+{
+    /*
+	Follows the following format:
+	
+    targetAddr -> spacer -> command -> tempData -> motionData ->
+        senderAddr -> messageID -> end char
+	
+    Array index#-------> 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 
+    Array index slot -->[2,5,5,-,S,-,7,0,.,3,- , 1, 2, -, 2, 4, 5, -, 1, 4, 0,&]
+	
+    255-S-70.3-12-245-140&
+    */
+
+    uint8_t indx = 0;
+    uint8_t stringHolderIndx = 0;
+    uint8_t messageId = 0;
+    char stringHolder[11];
+    
+    for(uint8_t indx2 = 0; indx2 < 10; indx2++)
+    {
+        stringHolder[indx2] = 'X';
+    }
+    stringHolder[10] = '\0';
+
+    //TODO: Add a check to make sure the message was formated right
+
+    //Get the toAddress
+    while(packedMessage[indx] != '-')
+    {
+        stringHolder[stringHolderIndx] = packedMessage[indx];
+        indx++;
+        stringHolderIndx++;
+    }
+
+    *toAddress = atoi(stringHolder);
+
+    indx++;
+    stringHolderIndx = 0;
+    for(uint8_t indx2 = 0; indx2 < 10; indx2++)
+    {
+        stringHolder[indx2] = 'X';
+    }
+
+    //Get the command
+    while(packedMessage[indx] != '-')
+    {
+        command[stringHolderIndx] = packedMessage[indx];
+        indx++;
+        stringHolderIndx++;
+    }
+
+    indx++;
+    stringHolderIndx = 0;
+    for(uint8_t indx2 = 0; indx2 < 10; indx2++)
+    {
+        stringHolder[indx2] = 'X';
+    }
+
+    //Get temperature data
+    while(packedMessage[indx] != '-')
+    {
+        stringHolder[stringHolderIndx] = packedMessage[indx];
+        indx++;
+        stringHolderIndx++;
+    }
+   *temperature = atof(stringHolder);
+
+    indx++;
+    stringHolderIndx = 0;
+    for(uint8_t indx2 = 0; indx2 < 10; indx2++)
+    {
+        stringHolder[indx2] = 'X';
+    }
+
+    //Get motion count data
+    while(packedMessage[indx] != '-')
+    {
+        stringHolder[stringHolderIndx] = packedMessage[indx];
+        indx++;
+        stringHolderIndx++;
+    }
+    *motionCount = atoi(stringHolder);
+
+    indx++;
+    stringHolderIndx = 0;
+    for(uint8_t indx2 = 0; indx2 < 10; indx2++)
+    {
+        stringHolder[indx2] = 'X';
+    }
+
+    //Get the fromAddress
+    while(packedMessage[indx] != '-')
+    {
+        stringHolder[stringHolderIndx] = packedMessage[indx];
+        indx++;
+        stringHolderIndx++;
+    }
+
+    *fromAddress = atoi(stringHolder);
+
+    indx++;
+    stringHolderIndx = 0;
+    for(uint8_t indx2 = 0; indx2 < 10; indx2++)
+    {
+        stringHolder[indx2] = 'X';
+    }
+
+    //Get the message ID
+    while(packedMessage[indx] != '&')
+    {
+        stringHolder[stringHolderIndx] = packedMessage[indx];
+        indx++;
+        stringHolderIndx++;
+    }
+
+    messageId = atoi(stringHolder);
+
+    if(messageId == hasHubsP[getAddrIndx(*fromAddress, hasHubsP)].lastUsedId)
+    {
+        duplicateMsg = true;
+    }
+    else
+    {
+        duplicateMsg = false;
+        hasHubsP[getAddrIndx(*fromAddress, hasHubsP)].lastUsedId = messageId;
+    }
+
+    return true;
+}
+
+
+//============================================================================
+//Description: Calculates a three digit message ID for the given hub address
+//
+//Arguments: 
+//  (IN) HUB_ADDR -- address of the hub that needs the message ID
+//  (IN) hasHubsP -- struct containing hub info
+//
+//Return:
+//  uint8_t -- 3 digit message ID
+//============================================================================
+uint8_t generateMsgId(const uint8_t HUB_ADDR, hub *hasHubsP)
+{
+    uint8_t msgId;
+    
+    do
+    {
+        srand(time(NULL));
+        msgId = rand() % 255;
+    }while(msgId == hasHubsP[getAddrIndx(HUB_ADDR, hasHubsP)].lastUsedId 
+            || msgId == 0);
+
+    hasHubsP[getAddrIndx(HUB_ADDR, hasHubsP)].lastUsedId = msgId;
+
+    return msgId;
+}
+
+
+//=========================================================================
+//Description: Packs all the data needed to be sent into a 32 char array
+//
+//Arguments:
+//  (IN) targetAddr -- single uint8_t address of where this packet is going
+//  (IN) senderAddr -- single uint8_t address of sender address
+//  (IN) tempData -- data from the temperature sensor
+//  (IN) motionData -- data from the motion sensor
+//  (IN) command -- 1-3 char command
+//  (IN) packedMessage -- char array containing the packed message
+//
+//Return:
+//  true -- was packed
+//==========================================================================
+bool packMessage(char *command, char *packedMessage, uint8_t targetAddr, 
+        uint8_t senderAddr, float tempData, short motionData, hub *hasHubsP)
+{
+    /*
+	Follows the following format:
+	
+    targetAddr -> spacer -> command -> tempData -> motionData ->
+        senderAddr -> messageID -> end char
+	
+    Array index#-------> 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 
+    Array index slot -->[2,5,5,-,S,-,7,0,.,3,- , 1, 2, -, 2, 4, 5, -, 1, 4, 0,&]
+	
+    255-S-70.3-12-245-140&
+    */
+
+    char packedMsg [32] = {};
+    string strNumHolder;
+    //uint8_t numHolderIndx = 0;
+    //String packedStr;
+    uint8_t indxCounter = 0; 
+    uint8_t indxStart = 0;
+    uint8_t genIndx = 0;
+
+    for(uint8_t indx = 0; indx < 32; indx++)
+    {
+        packedMsg[indx] = '0';
+        packedMessage[indx] = '0';
+    }
+
+    //Add targetAddr to message array
+    strNumHolder = to_string(targetAddr);
+    std::cout << "targAddr: " << strNumHolder << std::endl;
+    while(genIndx < strNumHolder.length())
+    {
+        packedMsg[genIndx] = strNumHolder[genIndx];
+        indxCounter++;
+        genIndx++;
+    }
+
+    //Add spacer and inciment our postion in the array
+    packedMsg[indxCounter] = '-';
+    indxCounter++;
+    genIndx = 0;
+
+    //Add command to message array
+    indxStart = indxCounter; 
+    while(genIndx < COMMAND_SIZE && command[genIndx] != '\0')
+    {
+        packedMsg[genIndx + indxStart] = command[genIndx];
+        indxCounter++;
+        genIndx++;
+    }
+
+    //Add spacer and inciment our postion in the array
+    packedMsg[indxCounter] = '-';
+    indxCounter++;
+    genIndx = 0;
+
+    //Add tempData to message array
+    strNumHolder = to_string(tempData);
+    indxStart = indxCounter; 
+    while(genIndx < strNumHolder.length())
+    {
+        packedMsg[genIndx + indxStart] = strNumHolder[genIndx];
+        indxCounter++;
+        genIndx++;
+    }
+
+    //Add spacer and inciment our postion in the array
+    packedMsg[indxCounter] = '-';
+    indxCounter++;
+    genIndx = 0;
+    
+    //Add motion to message array
+    strNumHolder = to_string(motionData);
+    indxStart = indxCounter; 
+    while(genIndx < strNumHolder.length())
+    {
+        packedMsg[genIndx + indxStart] = strNumHolder[genIndx];
+        indxCounter++;
+        genIndx++;
+    }
+     
+    //Add spacer and inciment our postion in the array
+    packedMsg[indxCounter] = '-';
+    indxCounter++;
+    genIndx = 0;
+
+    //Add senderAddr to message array
+    strNumHolder = to_string(senderAddr);
+    indxStart = indxCounter; 
+    while(genIndx < strNumHolder.length())
+    {
+        packedMsg[genIndx + indxStart] = strNumHolder[genIndx];
+        indxCounter++;
+        genIndx++;
+    }
+
+    //Add spacer and inciment our postion in the array
+    packedMsg[indxCounter] = '-';
+    indxCounter++;
+    genIndx = 0;
+
+    strNumHolder = to_string(generateMsgId(senderAddr, hasHubsP)); 
+    indxStart = indxCounter; 
+    while(genIndx < strNumHolder.length())
+    {
+        packedMsg[genIndx + indxStart] = strNumHolder[genIndx];
+        indxCounter++;
+        genIndx++;
+    }
+
+    //Add end char
+    packedMsg[indxCounter] = '&';
+
+    
+    for(uint8_t indx = 0; indx < 32; indx++)
+    {
+        packedMessage[indx] = packedMsg[indx];
+    }
+
+
+    std::cout << "In function: ";
+    for(uint8_t indx = 0; indx < 32; indx++)
+    {
+        std::cout << packedMessage[indx];
+    }
+    std::cout << std::endl;
+
     return true;
 }
 

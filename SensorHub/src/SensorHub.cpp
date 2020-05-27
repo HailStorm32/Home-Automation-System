@@ -204,7 +204,7 @@ int main()
         }
         
         //Start placement mode
-        placementMode(&radio, &myAddress, &serverAddr, addresses); 
+        placementMode(&radio, myAddress, serverAddr); 
         Serial.println(F("Exit"));     
 
         //store that we have finished setup in storage
@@ -258,7 +258,7 @@ int main()
                     radio.stopListening();
 
                     //TODO: Send message to server telling it we are ready
-                    sendMessage(&radio, &serverAddr, 0,0, "RDY", addresses);
+                    sendMessage(&radio, serverAddr, 0,0, "RDY");
 
                     //Wait for the dump of addresses
                     while(!radio.available()) {}

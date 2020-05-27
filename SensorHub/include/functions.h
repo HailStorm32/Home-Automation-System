@@ -5,21 +5,19 @@ bool packMessage(char *command, char *packedMessage, byte targetAddr,
         byte senderAddr, float tempData, short motionData);
 bool unpackMessage(char *packedMessage, byte *fromAddress, byte *toAddress, 
         float *temperature, short *motionCount, char *command, bool duplicateMsg);
-void placementMode(RF24 *radioP, byte *myAddress, byte *serverAddr, 
-        byte *addresses);
+void placementMode(RF24 *radioP, byte myAddress, byte serverAddr);
 void eepromWriteSingle(byte data, short memAddr);
-byte eepromReadSingle(int memAddr);
-bool sendMessage(RF24 *radioP, byte *receivingAddr, short *motionCnt, 
-        float *temperature, char *command, byte *addresses);
-byte getAddrIndx(const byte *address, const byte *addresses);
-byte findNodeWithShortestPath(const byte *targetNode, const byte *startingNode, 
-        const byte *addresses, node *addrGraph);
+byte eepromReadSingle(short memAddr);
+bool sendMessage(RF24 *radioP, byte receivingAddr, short motionCnt, 
+        float const * const temperature, char *command);
+byte getAddrIndx(byte address);
+byte findNodeWithShortestPath(byte targetNode, byte startingNode);
 void ftoa(float fVal, char *strVal);
 bool eepromRetrieveGraph();
 bool eepromStoreGraph();
-byte eepromRetrieveMsgId(const byte *hub_addr);
-void eepromStoreMsgId(const byte *HUB_ADDR, const byte *ID);
-byte generateMsgId(const byte *HUB_ADDR);
+byte eepromRetrieveMsgId(const byte hub_addr);
+void eepromStoreMsgId(const byte HUB_ADDR, const byte ID);
+byte generateMsgId(const byte HUB_ADDR);
 
 
 
@@ -35,8 +33,7 @@ byte generateMsgId(const byte *HUB_ADDR);
 //Return:
 //  void
 //=======================================================================
-void placementMode(RF24 *radioP, byte *myAddress, byte *serverAddr, 
-        byte *addresses)
+void placementMode(RF24 *radioP, byte myAddress, byte serverAddr)
 {
     byte indx = 0;
     byte startIndx;
@@ -49,11 +46,11 @@ void placementMode(RF24 *radioP, byte *myAddress, byte *serverAddr,
     bool receivedReply = false;
     
     Serial.print(F("My: "));
-    Serial.println(*myAddress);
+    Serial.println(myAddress);
     radioP->stopListening();
     radioP->flush_tx();
-    radioP->openWritingPipe(*serverAddr);
-    radioP->openReadingPipe(1, *myAddress);
+    radioP->openWritingPipe(serverAddr);
+    radioP->openReadingPipe(1, myAddress);
 
 
     //packMessage("P__", packedMsg, *serverAddr, *myAddress, 0, 0); 
@@ -65,7 +62,7 @@ void placementMode(RF24 *radioP, byte *myAddress, byte *serverAddr,
    
     while(digitalRead(SET_BTN) == HIGH || receivedReply != true)
     {
-        packMessage("P__", packedMsg, *serverAddr, *myAddress, 0, 0); 
+        packMessage("P__", packedMsg, serverAddr, myAddress, 0, 0); 
 
         indx = 1;
         numOfSpacers = 0;
@@ -91,7 +88,7 @@ void placementMode(RF24 *radioP, byte *myAddress, byte *serverAddr,
         {
             radioP->txStandBy();
             //Try and forward to other addresses
-            while(addresses[indx] != 0 && addresses[indx] != *serverAddr && 
+            while(addresses[indx] != 0 && addresses[indx] != serverAddr && 
                     indx < MAX_NUM_OF_ADDRESSES)
             {
                 radioP->openWritingPipe(addresses[indx]);
@@ -105,7 +102,7 @@ void placementMode(RF24 *radioP, byte *myAddress, byte *serverAddr,
                 radioP->txStandBy();
                 indx++;
             }
-            radioP->openWritingPipe(*serverAddr);
+            radioP->openWritingPipe(serverAddr);
             indx = 0;
         }
         else
@@ -193,18 +190,18 @@ void placementMode(RF24 *radioP, byte *myAddress, byte *serverAddr,
         }
     }
     
-    radioP->openWritingPipe(*serverAddr);
+    radioP->openWritingPipe(serverAddr);
     radioP->stopListening();
     radioP->flush_tx();
     indx = 0;
 
-    packMessage("PD_", packedMsg, *serverAddr, *myAddress, 0, 0); 
+    packMessage("PD_", packedMsg, serverAddr, myAddress, 0, 0); 
 
     if(!radioP->write(packedMsg, 32))
     {
         radioP->txStandBy();
         //Try and forward to other addresses
-        while(addresses[indx] != 0 && addresses[indx] != *serverAddr && 
+        while(addresses[indx] != 0 && addresses[indx] != serverAddr && 
                 indx < MAX_NUM_OF_ADDRESSES)
         {
             radioP->openWritingPipe(addresses[indx]);
@@ -218,7 +215,7 @@ void placementMode(RF24 *radioP, byte *myAddress, byte *serverAddr,
             radioP->txStandBy();
             indx++;
         }
-        radioP->openWritingPipe(*serverAddr);
+        radioP->openWritingPipe(serverAddr);
         indx = 0;
     }
     radioP->txStandBy();
@@ -397,7 +394,7 @@ bool packMessage(char *command, char *packedMessage, byte targetAddr,
         numberHolder[indx] = 'X';
     }
 
-    itoa(generateMsgId(&senderAddr), numberHolder, 10);
+    itoa(generateMsgId(senderAddr), numberHolder, 10);
     
     indxStart = indxCounter; 
     while(genIndx < HOLDER_SIZE - 1 && numberHolder[genIndx] != 'X'
@@ -435,7 +432,7 @@ bool packMessage(char *command, char *packedMessage, byte targetAddr,
 //Return:
 //  true -- was able to unpack the command
 //  false -- unpacking failed
-
+//=====================================================================
 bool unpackMessage(char *packedMessage, byte *fromAddress, byte *toAddress, 
         float *temperature, short *motionCount, char *command, bool duplicateMsg)
 {
@@ -555,14 +552,14 @@ bool unpackMessage(char *packedMessage, byte *fromAddress, byte *toAddress,
 
     messageId = atoi(stringHolder);
 
-    if(messageId == eepromRetrieveMsgId(fromAddress))
+    if(messageId == eepromRetrieveMsgId(*fromAddress))
     {
         duplicateMsg = true;
     }
     else
     {
         duplicateMsg = false;
-        eepromStoreMsgId(fromAddress, &messageId);
+        eepromStoreMsgId(*fromAddress, messageId);
     }
 
     return true;
@@ -601,7 +598,7 @@ void eepromWriteSingle(byte data, short memAddr)
 //Return:
 //  byte -- the byte read from the given cell
 //=======================================================================
-byte eepromReadSingle(int memAddr)
+byte eepromReadSingle(short memAddr)
 {
     Wire.begin();
     
@@ -629,21 +626,21 @@ byte eepromReadSingle(int memAddr)
 //  true -- was able to send to a hub
 //  false -- wasnt able to send to any hub
 //=========================================================================
-bool sendMessage(RF24 *radioP, byte *receivingAddr, short *motionCnt, 
-        float *temperature, char *command, byte *addresses)
+bool sendMessage(RF24 *radioP, byte receivingAddr, short motionCnt, 
+        float const * const temperature, char *command)
 {
-    byte *myAddress = &addresses[0];
-    byte *serverAddr = &addresses[MAX_NUM_OF_ADDRESSES - 1]; 
+    byte myAddress = addresses[0];
+    byte serverAddr = addresses[MAX_NUM_OF_ADDRESSES - 1]; 
     char packedMessage[32];
     byte addrIndx = 1;
     bool messageSent = false;
     byte hub2SendTo;
 
     radioP->stopListening();
-    radioP->openWritingPipe(*receivingAddr);
+    radioP->openWritingPipe(receivingAddr);
 
-    packMessage(command, packedMessage, *receivingAddr, *myAddress, *temperature,
-           *motionCnt);
+    packMessage(command, packedMessage, receivingAddr, myAddress, *temperature,
+           motionCnt);
 
     if(radioP->write(packedMessage, 32))
     {
@@ -654,19 +651,17 @@ bool sendMessage(RF24 *radioP, byte *receivingAddr, short *motionCnt,
         if(hasGraph == true)
         {
             byte indx = 0;
-            hub2SendTo = findNodeWithShortestPath(receivingAddr, myAddress, 
-                    addresses, addrGraph);
+            hub2SendTo = findNodeWithShortestPath(receivingAddr, myAddress);
             
             if(!radioP->write(packedMessage, 32))
             {
                 //try and see if there is a path from another adjacent hub
                 while(indx < MAX_NUM_OF_ADDRESSES && 
-                        addrGraph[getAddrIndx(myAddress, addresses)]
-                        .adjNodes[indx] != 0)
+                        addrGraph[getAddrIndx(myAddress)].adjNodes[indx] != 0)
                 {
                     hub2SendTo = findNodeWithShortestPath(
-                            &addrGraph[getAddrIndx(myAddress, addresses)]
-                            .adjNodes[indx], myAddress, addresses, addrGraph);
+                            addrGraph[getAddrIndx(myAddress)]
+                            .adjNodes[indx], myAddress);
 
                     if(hub2SendTo != 0 && radioP->write(packedMessage, 32))
                     {
@@ -685,7 +680,7 @@ bool sendMessage(RF24 *radioP, byte *receivingAddr, short *motionCnt,
             while(addresses[addrIndx] != 0 || addrIndx != 
                     MAX_NUM_OF_ADDRESSES-1)
             {
-                radioP->openWritingPipe(&addresses[addrIndx]);
+                radioP->openWritingPipe(addresses[addrIndx]);
                 if(radioP->write(packedMessage, 32))
                 {
                     messageSent = true;
@@ -719,11 +714,11 @@ bool sendMessage(RF24 *radioP, byte *receivingAddr, short *motionCnt,
 //Returns:
 //  byte -- the index for the given address
 //=========================================================================
-byte getAddrIndx(const byte *address, const byte *addresses)
+byte getAddrIndx(byte address)
 {
     byte indx = 0;
 
-    while(indx != MAX_NUM_OF_ADDRESSES && addresses[indx] != *address)
+    while(indx != MAX_NUM_OF_ADDRESSES && addresses[indx] != address)
     {
         indx++;
     }
@@ -754,11 +749,10 @@ byte getAddrIndx(const byte *address, const byte *addresses)
 //  0 -- if failed
 //  2-255 -- address of the node that starts the path
 //=========================================================================
-byte findNodeWithShortestPath(const byte *targetNode, const byte *startingNode, 
-        const byte *addresses, node *addrGraph)
+byte findNodeWithShortestPath(byte targetNode, byte startingNode)
 {
     bool haveVisited[MAX_NUM_OF_ADDRESSES];
-    const byte *myAddress = &addresses[0];
+    const byte myAddress = addresses[0];
     byte currentNode = 0;
     byte indx;
     byte adjNode;
@@ -771,34 +765,34 @@ byte findNodeWithShortestPath(const byte *targetNode, const byte *startingNode,
 
     if(startingNode == 0)
     {
-        currentNode = *myAddress;
+        currentNode = myAddress;
     }
     else
     {
-        currentNode = *startingNode; 
+        currentNode = startingNode; 
     }
     graphQueue.push(currentNode);
-    haveVisited[getAddrIndx(&currentNode, addresses)] = true;
+    haveVisited[getAddrIndx(currentNode)] = true;
 
     while(!graphQueue.isEmpty())
     {
         graphQueue.pop();
 
         //Queue all adjacent nodes
-        while(addrGraph[getAddrIndx(&currentNode, addresses)].adjNodes[indx] != 0)
+        while(addrGraph[getAddrIndx(currentNode)].adjNodes[indx] != 0)
         {
-            adjNode = addrGraph[getAddrIndx(&currentNode, addresses)].adjNodes[indx];
+            adjNode = addrGraph[getAddrIndx(currentNode)].adjNodes[indx];
 
-            if(haveVisited[getAddrIndx(&adjNode, addresses)] == false)
+            if(haveVisited[getAddrIndx(adjNode)] == false)
             {
                 //Add to queue
                 graphQueue.push(adjNode);
 
                 //Mark as visited
-                haveVisited[getAddrIndx(&adjNode, addresses)] = true;
+                haveVisited[getAddrIndx(adjNode)] = true;
 
                 //Add its parent node
-                addrGraph[getAddrIndx(&adjNode, addresses)].parentNode = currentNode;
+                addrGraph[getAddrIndx(adjNode)].parentNode = currentNode;
 
                 //Get its distance to the starting node
                 //addrGraph[getAddrIndx(&adjNode, addresses)].distanceFromStart = 
@@ -814,12 +808,12 @@ byte findNodeWithShortestPath(const byte *targetNode, const byte *startingNode,
     //Work backward from the target node and piece together parent nodes
     indx = 0;
 
-    currentNode = *targetNode;
+    currentNode = targetNode;
 
-    while(addrGraph[getAddrIndx(&currentNode, addresses)].parentNode != *myAddress &&
+    while(addrGraph[getAddrIndx(currentNode)].parentNode != myAddress &&
             indx < MAX_NUM_OF_ADDRESSES)
     {
-        currentNode = addrGraph[getAddrIndx(&currentNode, addresses)].parentNode;
+        currentNode = addrGraph[getAddrIndx(currentNode)].parentNode;
         indx++;
     }
     if(indx >= MAX_NUM_OF_ADDRESSES)
@@ -964,9 +958,9 @@ bool eepromRetrieveGraph()
 //Return:
 //  byte -- the last used ID by the given hub address
 //============================================================================
-byte eepromRetrieveMsgId(const byte *HUB_ADDR)
+byte eepromRetrieveMsgId(const byte HUB_ADDR)
 {
-    return eepromReadSingle(getAddrIndx(HUB_ADDR, addresses) 
+    return eepromReadSingle(getAddrIndx(HUB_ADDR) 
             + GRAPH_ARRAY_MEM_START);
 }
 
@@ -982,9 +976,9 @@ byte eepromRetrieveMsgId(const byte *HUB_ADDR)
 //Return:
 //  void
 //============================================================================
-void eepromStoreMsgId(const byte *HUB_ADDR, const byte *ID)
+void eepromStoreMsgId(const byte HUB_ADDR, const byte ID)
 {
-    eepromWriteSingle(*ID, getAddrIndx(HUB_ADDR, addresses) 
+    eepromWriteSingle(ID, getAddrIndx(HUB_ADDR) 
             + GRAPH_ARRAY_MEM_START);
 }
 
@@ -998,7 +992,7 @@ void eepromStoreMsgId(const byte *HUB_ADDR, const byte *ID)
 //Return:
 //  byte -- 3 digit message ID
 //============================================================================
-byte generateMsgId(const byte *HUB_ADDR)
+byte generateMsgId(const byte HUB_ADDR)
 {
     byte msgId;
     
@@ -1009,7 +1003,7 @@ byte generateMsgId(const byte *HUB_ADDR)
     }while(msgId == eepromRetrieveMsgId(HUB_ADDR) 
             || msgId == 0);
 
-    eepromStoreMsgId(HUB_ADDR, &msgId);
+    eepromStoreMsgId(HUB_ADDR, msgId);
 
     return msgId;
 }
