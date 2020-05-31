@@ -11,8 +11,9 @@ bool placementMode(uint8_t myAddress, RF24 *radioP, uint8_t hubAddr,
         hub *hasHubsP);
 uint8_t getAddrIndx(uint8_t address, hub * hasHubsP);
 bool unpackMessage(char *packedMessage, uint8_t *fromAddress, uint8_t *toAddress, 
-        float *temperature, short *motionCount, char *command, bool duplicateMsg
+        float *temperature, short *motionCount, char *command, bool *duplicateMsg
         , hub *hasHubsP);
+uint8_t findNodeWithShortestPath(uint8_t targetNode, uint8_t startingNode, hub *hasHubsP);
 uint8_t generateMsgId(const uint8_t HUB_ADDR);
 bool packMessage(char *command, char *packedMessage, uint8_t targetAddr, 
         uint8_t senderAddr, float tempData, short motionData, hub *hasHubsP);
@@ -293,6 +294,13 @@ bool placementMode(uint8_t myAddress, RF24 *radioP, uint8_t hubAddr,
     char packedMsg[32];
     bool hasSent = false;
 
+    uint8_t fromAddr = 0;
+    uint8_t toAddr = 0;
+    float temp = 0;
+    short motionCnt = 0;
+    char commandCstr[COMMAND_SIZE];
+    bool duplicateMsg;
+
     for(uint8_t indx = 0; indx < 32; indx++)
     {
         packedReply[indx] = '*';
@@ -334,11 +342,23 @@ bool placementMode(uint8_t myAddress, RF24 *radioP, uint8_t hubAddr,
             {
                 std::cout << packedReply[i];
             }
+            std::cout << std::endl;
 
             //TODO: check to see if we recived this message already
             
+            unpackMessage(packedReply, &fromAddr, &toAddr, &temp, &motionCnt, 
+                    commandCstr, &duplicateMsg, hasHubsP);
 
-            //Get the index of the spacer before the command
+            command = commandCstr;
+            
+            if(duplicateMsg)
+            {
+                std::cout << "Recieved duplicate message! Ignoring.." 
+                    << std::endl;
+                continue;
+            }
+
+           /* //Get the index of the spacer before the command
             while(spacerCnt != 1 && indx < 31)
             {
                 radioP->openWritingPipe(hubAddr);
@@ -359,7 +379,7 @@ bool placementMode(uint8_t myAddress, RF24 *radioP, uint8_t hubAddr,
             for(uint8_t indx2 = startIndx; packedReply[indx2] != '-'; indx2++)
             {
                 command += packedReply[indx2];
-            }
+            }*/
 
             std::cout << "Command: " << command << std::endl;
 
@@ -370,22 +390,29 @@ bool placementMode(uint8_t myAddress, RF24 *radioP, uint8_t hubAddr,
                 radioP->stopListening();
                 radioP->flush_tx();
                 indx = 1;
+                bool hasSent = false;
 
                 if(!radioP->write(&packedMsg,32))
                 {
                     std::cout << "target send Failed!" << std::endl;
                 
+                while(!hasSent)
+                {
                     //Try and forward to other hubs
                     while(indx < MAX_NUM_OF_ADDRS && 
                             hasHubsP[indx].address != 0)
                     {
+                        std::this_thread::sleep_for(std::chrono::milliseconds(50));
                         radioP->openWritingPipe(hasHubsP[indx].address);
                         if(!radioP->write(&packedMsg,32))
                         {
-                            std::cout << indx << " send Failed!" << std::endl;
+                            std::cout << (int)hasHubsP[indx].address << " send Failed!" << std::endl;
                         }
+                        else{hasSent = true;}
                         indx++;
                     }
+                    indx = 1;
+                }
                 }
                 radioP->txStandBy();
             }
@@ -443,7 +470,7 @@ uint8_t getAddrIndx(uint8_t address, hub * hasHubsP)
 //  false -- unpacking failed
 //=====================================================================
 bool unpackMessage(char *packedMessage, uint8_t *fromAddress, uint8_t *toAddress, 
-        float *temperature, short *motionCount, char *command, bool duplicateMsg
+        float *temperature, short *motionCount, char *command, bool *duplicateMsg
         , hub *hasHubsP)
 {
     /*
@@ -470,7 +497,7 @@ bool unpackMessage(char *packedMessage, uint8_t *fromAddress, uint8_t *toAddress
     stringHolder[10] = '\0';
 
     //TODO: Add a check to make sure the message was formated right
-
+    
     //Get the toAddress
     while(packedMessage[indx] != '-')
     {
@@ -564,15 +591,200 @@ bool unpackMessage(char *packedMessage, uint8_t *fromAddress, uint8_t *toAddress
 
     if(messageId == hasHubsP[getAddrIndx(*fromAddress, hasHubsP)].lastUsedId)
     {
-        duplicateMsg = true;
+        *duplicateMsg = true;
     }
     else
     {
-        duplicateMsg = false;
+        *duplicateMsg = false;
         hasHubsP[getAddrIndx(*fromAddress, hasHubsP)].lastUsedId = messageId;
     }
 
     return true;
+}
+
+
+//=========================================================================
+//Description: Traverses address graph using BFS. Then using the list of
+//  parent nodes, goes backwards from the target node to find the node that
+//  starts the shortest path
+//
+//Arguments:
+//  (IN) targetNode -- contains the address of the target node
+//  (IN) startingNode -- contains the address of the starting node
+//  (IN) hasHubsP -- struct containing hub info
+//
+//Returns:
+//  0 -- if failed
+//  2-255 -- address of the node that starts the path
+//=========================================================================
+uint8_t findNodeWithShortestPath(uint8_t targetNode, uint8_t startingNode, hub *hasHubsP)
+{
+    bool haveVisited[MAX_NUM_OF_ADDRS];
+    const uint8_t myAddress = hasHubsP[0].address;
+    uint8_t currentNode = 0;
+    uint8_t indx;
+    uint8_t adjNode;
+    queue<uint8_t> graphQueue;
+
+    for(uint8_t indx = 0; indx < MAX_NUM_OF_ADDRS; indx++)
+    {
+        haveVisited[indx] = false;
+    }
+
+    if(startingNode == 0)
+    {
+        currentNode = myAddress;
+    }
+    else
+    {
+        currentNode = startingNode; 
+    }
+    graphQueue.push(currentNode);
+    haveVisited[getAddrIndx(currentNode, hasHubsP)] = true;
+
+    while(!graphQueue.empty())
+    {
+        graphQueue.pop();
+
+        //Queue all adjacent nodes
+        while(addrGraph[getAddrIndx(currentNode, hasHubsP)].adjNodes[indx] != 0)
+        {
+            adjNode = addrGraph[getAddrIndx(currentNode, hasHubsP)].adjNodes[indx];
+
+            if(haveVisited[getAddrIndx(adjNode, hasHubsP)] == false)
+            {
+                //Add to queue
+                graphQueue.push(adjNode);
+
+                //Mark as visited
+                haveVisited[getAddrIndx(adjNode, hasHubsP)] = true;
+
+                //Add its parent node
+                addrGraph[getAddrIndx(adjNode, hasHubsP)].parentNode = currentNode;
+
+                //Get its distance to the starting node
+                //addrGraph[getAddrIndx(&adjNode, addresses)].distanceFromStart = 
+                   // addrGraph[getAddrIndx(&currentNode, addresses)].distanceFromStart + 1;
+            }
+            indx++;
+        }
+
+        currentNode = graphQueue.front();
+        indx = 0;
+    }
+    
+    //Work backward from the target node and piece together parent nodes
+    indx = 0;
+
+    currentNode = targetNode;
+
+    while(addrGraph[getAddrIndx(currentNode, hasHubsP)].parentNode != myAddress &&
+            indx < MAX_NUM_OF_ADDRS)
+    {
+        currentNode = addrGraph[getAddrIndx(currentNode, hasHubsP)].parentNode;
+        indx++;
+    }
+    if(indx >= MAX_NUM_OF_ADDRS)
+    {
+        return 0;
+    }
+    else
+    {
+        return currentNode;
+    }
+}
+
+
+//========================================================================
+//Description: sends a message to the given address using the address
+//  graph (if it has been set up) to send out messages
+//
+//Arguments:
+//  (IN) radioP -- pointer to radio instance
+//  (IN) receivingAddr -- address to send message to
+//  (IN) motionCnt -- number of motion triggers
+//  (IN) temperature -- room temperature
+//  (IN) command -- command
+//  (IN) hasHubsP -- struct containing hub info
+//
+//Return:
+//  true -- was able to send to a hub
+//  false -- wasnt able to send to any hub
+//=========================================================================
+bool sendMessage(RF24 *radioP, uint8_t receivingAddr, short motionCnt, 
+        float const * const temperature, char *command, hub *hasHubsP)
+{
+    uint8_t myAddress = hasHubsP[0].address;
+    char packedMessage[32];
+    uint8_t addrIndx = 1;
+    bool messageSent = false;
+    uint8_t hub2SendTo;
+
+    radioP->stopListening();
+    radioP->openWritingPipe(receivingAddr);
+
+    packMessage(command, packedMessage, receivingAddr, myAddress, *temperature,
+           motionCnt, hasHubsP);
+
+    if(radioP->write(packedMessage, 32))
+    {
+        messageSent = true;
+    }
+    else
+    {
+        if(hasGraph == true)
+        {
+            uint8_t indx = 0;
+            hub2SendTo = findNodeWithShortestPath(receivingAddr, myAddress, 
+                    hasHubsP);
+            
+            if(!radioP->write(packedMessage, 32))
+            {
+                //try and see if there is a path from another adjacent hub
+                while(indx < MAX_NUM_OF_ADDRS && 
+                        addrGraph[getAddrIndx(myAddress, hasHubsP)].adjNodes[indx] != 0)
+                {
+                    hub2SendTo = findNodeWithShortestPath(
+                            addrGraph[getAddrIndx(myAddress, hasHubsP)]
+                            .adjNodes[indx], myAddress, hasHubsP);
+
+                    if(hub2SendTo != 0 && radioP->write(packedMessage, 32))
+                    {
+                        messageSent = true;
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                messageSent = true;
+            }
+        }
+        else
+        {
+            while(hasHubsP[addrIndx].address != 0 && addrIndx != 
+                    MAX_NUM_OF_ADDRS)
+            {
+                radioP->openWritingPipe(hasHubsP[addrIndx].address);
+                if(radioP->write(packedMessage, 32))
+                {
+                    messageSent = true;
+                    break;
+                }
+                addrIndx++;
+            }
+        }
+    }
+    radioP->startListening();
+    
+    if(messageSent == true)
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    }
 }
 
 
@@ -1050,10 +1262,15 @@ int testHubSetup(RF24 *radioP, hub *hasHubsP, MYSQL *sqlConnP)
         while(!exitFlag)
         {
             exitFlag = true;
-            newHubAddr = (uint8_t)(rand() % 255 + 2);
+
+            do
+            {
+                srand(time(NULL));
+                newHubAddr = rand() % 255;
+            }while(newHubAddr == 0);
 
             //Make sure generated address isnt already taken
-            for(int indx = 0; indx << numOfSetupHubs; indx++)
+            for(int indx = 0; indx < numOfSetupHubs; indx++)
             {
                 if(newHubAddr == hasHubsP[indx].address)
                 {

@@ -4,12 +4,13 @@
 bool packMessage(char *command, char *packedMessage, byte targetAddr, 
         byte senderAddr, float tempData, short motionData);
 bool unpackMessage(char *packedMessage, byte *fromAddress, byte *toAddress, 
-        float *temperature, short *motionCount, char *command, bool duplicateMsg);
+        float *temperature, short *motionCount, char *command, bool *duplicateMsg);
 void placementMode(RF24 *radioP, byte myAddress, byte serverAddr);
 void eepromWriteSingle(byte data, short memAddr);
 byte eepromReadSingle(short memAddr);
 bool sendMessage(RF24 *radioP, byte receivingAddr, short motionCnt, 
         float const * const temperature, char *command);
+bool sendPrePackedMessage(RF24 *radioP, char *packedMessage, uint8_t receivingAddr);
 byte getAddrIndx(byte address);
 byte findNodeWithShortestPath(byte targetNode, byte startingNode);
 void ftoa(float fVal, char *strVal);
@@ -434,7 +435,7 @@ bool packMessage(char *command, char *packedMessage, byte targetAddr,
 //  false -- unpacking failed
 //=====================================================================
 bool unpackMessage(char *packedMessage, byte *fromAddress, byte *toAddress, 
-        float *temperature, short *motionCount, char *command, bool duplicateMsg)
+        float *temperature, short *motionCount, char *command, bool *duplicateMsg)
 {
     /*
 	Follows the following format:
@@ -554,11 +555,11 @@ bool unpackMessage(char *packedMessage, byte *fromAddress, byte *toAddress,
 
     if(messageId == eepromRetrieveMsgId(*fromAddress))
     {
-        duplicateMsg = true;
+        *duplicateMsg = true;
     }
     else
     {
-        duplicateMsg = false;
+        *duplicateMsg = false;
         eepromStoreMsgId(*fromAddress, messageId);
     }
 
@@ -617,6 +618,7 @@ byte eepromReadSingle(short memAddr)
 //  graph (if it has been set up) to send out messages
 //
 //Arguments:
+//  (IN) radioP -- pointer to radio instance
 //  (IN) receivingAddr -- address to send message to
 //  (IN) motionCnt -- number of motion triggers
 //  (IN) temperature -- room temperature
@@ -677,7 +679,7 @@ bool sendMessage(RF24 *radioP, byte receivingAddr, short motionCnt,
         }
         else
         {
-            while(addresses[addrIndx] != 0 || addrIndx != 
+            while(addresses[addrIndx] != 0 && addrIndx != 
                     MAX_NUM_OF_ADDRESSES-1)
             {
                 radioP->openWritingPipe(addresses[addrIndx]);
@@ -703,6 +705,91 @@ bool sendMessage(RF24 *radioP, byte receivingAddr, short motionCnt,
     }
 }
 
+
+//========================================================================
+//Description: sends a pre packaged message to the given address using the 
+//  address graph (if it has been set up) to send out messages
+//
+//Arguments:
+//  (IN) radioP -- pointer to radio instance
+//  (IN) packedMessage -- prepacked message to send
+//  (IN) receivingAddr -- address to send message to
+//
+//Return:
+//  true -- was able to send to a hub
+//  false -- wasnt able to send to any hub
+//=========================================================================
+bool sendPrePackedMessage(RF24 *radioP, char *packedMessage, uint8_t receivingAddr)
+{
+    byte myAddress = addresses[0];
+    byte serverAddr = addresses[MAX_NUM_OF_ADDRESSES - 1]; 
+    byte addrIndx = 1;
+    bool messageSent = false;
+    byte hub2SendTo;
+
+    radioP->stopListening();
+    radioP->openWritingPipe(receivingAddr);
+
+    if(radioP->write(packedMessage, 32))
+    {
+        messageSent = true;
+    }
+    else
+    {
+        if(hasGraph == true)
+        {
+            byte indx = 0;
+            hub2SendTo = findNodeWithShortestPath(receivingAddr, myAddress);
+            
+            if(!radioP->write(packedMessage, 32))
+            {
+                //try and see if there is a path from another adjacent hub
+                while(indx < MAX_NUM_OF_ADDRESSES && 
+                        addrGraph[getAddrIndx(myAddress)].adjNodes[indx] != 0)
+                {
+                    hub2SendTo = findNodeWithShortestPath(
+                            addrGraph[getAddrIndx(myAddress)]
+                            .adjNodes[indx], myAddress);
+
+                    if(hub2SendTo != 0 && radioP->write(packedMessage, 32))
+                    {
+                        messageSent = true;
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                messageSent = true;
+            }
+        }
+        else
+        {
+            while(addresses[addrIndx] != 0 && addrIndx != 
+                    MAX_NUM_OF_ADDRESSES-1)
+            {
+                radioP->openWritingPipe(addresses[addrIndx]);
+                if(radioP->write(packedMessage, 32))
+                {
+                    messageSent = true;
+                    break;
+                }
+                addrIndx++;
+            }
+        }
+    }
+    radioP->openWritingPipe(serverAddr);
+    radioP->startListening();
+    
+    if(messageSent == true)
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
 
 //=========================================================================
 //Description: returns what index the given address is stored in the

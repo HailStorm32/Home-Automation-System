@@ -60,7 +60,7 @@ all: $(EXE)
 $(EXE): $(OBJ) | wiringPi arduinolibs rf24
 ifeq ($(TARGET), arm-linux-gnueabihf-)
 	ln -s ~/Projects/Home-Automation-System/CommandCenter/$(WIR_PI_DIR)/libwiringPi.so* ~/Projects/Home-Automation-System/CommandCenter/$(WIR_PI_DIR)/libwiringPi.so
-	$(CXX) -o $@ $^ $(LDFLAGS)
+	$(CXX) -fno-stack-protector -o $@ $^ $(LDFLAGS)
 	rm ~/Projects/Home-Automation-System/CommandCenter/$(WIR_PI_DIR)/libwiringPi.so
 else
 	$(CXX) -o $@ $^ $(LDFLAGS)

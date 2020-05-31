@@ -28,11 +28,12 @@ const uint8_t COMMAND_SIZE = 3;
 
 struct node
 {
-    byte adjNodes[MAX_NUM_OF_ADDRS];
-    byte parentNode;
+    uint8_t adjNodes[1];
+    uint8_t parentNode;
 };
 
-node addrGraph[MAX_NUM_OF_ADDRS];
+node addrGraph[1];
+bool hasGraph = false;
 
 #include "functions.h"
 
@@ -84,7 +85,6 @@ int main()
         std::cout << "\nWARNING: Error checking for database queries is off!"
             << std::endl;
     }
-
 
     //Make connection to database
     sqlConn = mysql_init(sqlConn);
@@ -156,7 +156,12 @@ int main()
 
     //Clear screen
     system("clear");
-   
+
+    radio.stopListening();//DEBUG
+    radio.openWritingPipe(234);//DEBUG
+    radio.write("rre",3,0);//DEBUG
+
+
     do
     {
         userEntry = "";

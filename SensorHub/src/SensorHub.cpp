@@ -212,22 +212,26 @@ int main()
         hasDoneSetup = true;
     }
 
+    radio.stopListening();//DEBUG
+    radio.openReadingPipe(1, 234);
     radio.startListening();
-    radio.openReadingPipe(1, myAddress);
-    radio.openWritingPipe(serverAddr);
+    //radio.openWritingPipe(serverAddr);
 
 ///////////////////// RUNNING CODE ////////////////// 
     
     while(true)
     {
-        while(!radio.available()) {}
+        while(!radio.available()) {}//Serial.println(F("Waiting.."));}
+
+        Serial.println(F("GOT IT"));
+                digitalWrite(STATUS_LED, HIGH);
 
         radio.read(packedMessage, 32);
 
         unpackMessage(packedMessage, &fromAddress, &toAddress, &temperature, 
-                &motionCount, command, duplicateMsg);
+                &motionCount, command, &duplicateMsg);
 
-        if(toAddress == myAddress)
+        if(toAddress == myAddress && duplicateMsg == false)
         {
             //If the command is Address Update Begin
             if(strcmp(command, "AUB") == 0)
@@ -292,9 +296,17 @@ int main()
                 //said we would get. If we didnt, send the server an error
             }
         }
-        else
+        else if(toAddress != myAddress && duplicateMsg == false)
         {
             //TODO: Forward the message
+
+            //Forward setup pings
+            if(strcmp(command, "P__") == 0 || strcmp(command, "PR_") == 0 
+                    || strcmp(command, "PD_") == 0)
+            {
+                digitalWrite(STATUS_LED, HIGH);
+                sendPrePackedMessage(&radio, packedMessage, toAddress);
+            }
         }
     }    
 }
